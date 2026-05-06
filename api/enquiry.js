@@ -42,6 +42,7 @@ export default async function handler(req, res) {
   await resend.emails.send({
     from: 'Halberg Fin <onboarding@resend.dev>',
     to: process.env.NOTIFY_EMAIL,
+     cc: ['renuvarghese3@gmail.com'], 
     subject: `🎯 New Lead: ${first_name} ${last_name || ''} — ${course_interest || 'No course selected'}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0a0e17;color:#faf6ed;padding:32px;border-radius:12px">
