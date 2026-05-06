@@ -41,8 +41,7 @@ export default async function handler(req, res) {
   // 2. Send notification email to admin
   await resend.emails.send({
     from: 'Halberg Fin <onboarding@resend.dev>',
-   to: 'achithran@gmail.com', 
-     cc: ['renuvarghese3@gmail.com'], 
+    to: process.env.NOTIFY_EMAIL,
     subject: `🎯 New Lead: ${first_name} ${last_name || ''} — ${course_interest || 'No course selected'}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0a0e17;color:#faf6ed;padding:32px;border-radius:12px">
