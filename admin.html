@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Halberg Fin — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Satoshi:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0e17;--ink2:#111827;--ink3:#1a2035;
+  --gold:#d4a843;--gold2:#f0c84a;
+  --cream:#faf6ed;--border:rgba(212,168,67,.15);
+  --muted:rgba(255,255,255,.35);--text:rgba(255,255,255,.85);
+  --green:#2ecc71;--red:#e74c3c;--blue:#3b82f6;
+  --r:12px;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:'Satoshi',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+::selection{background:var(--gold);color:var(--ink)}
+
+/* ── NOISE ── */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.35;mix-blend-mode:multiply}
+
+/* ── LOGIN ── */
+#login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--ink);z-index:100;
+}
+.login-box{
+  width:360px;background:var(--ink2);border:1px solid var(--border);
+  border-radius:20px;padding:44px 36px;position:relative;overflow:hidden;
+}
+.login-box::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(212,168,67,.12) 0%,transparent 65%);border-radius:50%;pointer-events:none}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold2);letter-spacing:2px;margin-bottom:4px}
+.login-sub{font-size:10px;color:rgba(212,168,67,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
+.login-label{font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
+.login-input{
+  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:9px;padding:12px 14px;font-family:'Satoshi',sans-serif;
+  font-size:14px;color:white;outline:none;transition:border-color .25s;margin-bottom:16px;
+}
+.login-input:focus{border-color:rgba(212,168,67,.5)}
+.login-input::placeholder{color:rgba(255,255,255,.2)}
+.login-btn{
+  width:100%;padding:13px;background:var(--gold);border:none;border-radius:9px;
+  font-family:'Satoshi',sans-serif;font-size:14px;font-weight:800;color:var(--ink);
+  cursor:pointer;transition:all .25s;letter-spacing:.3px;
+}
+.login-btn:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(212,168,67,.35)}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
+
+/* ── MAIN APP ── */
+#app{display:none}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,14,23,.94);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:60px;
+}
+.tb-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold2);letter-spacing:2px}
+.tb-sub{font-size:9px;color:rgba(212,168,67,.4);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
+.tb-right{display:flex;align-items:center;gap:16px}
+.tb-refresh{background:rgba(212,168,67,.1);border:1px solid var(--border);color:var(--gold);
+  padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:'Satoshi',sans-serif;transition:all .2s;letter-spacing:.3px}
+.tb-refresh:hover{background:rgba(212,168,67,.2)}
+.tb-logout{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);
+  padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s}
+.tb-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* ── LAYOUT ── */
+.main{padding:32px}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;color:white;letter-spacing:1px;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
+.stat-card{
+  background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px 24px;position:relative;overflow:hidden;transition:border-color .2s;
+}
+.stat-card:hover{border-color:rgba(212,168,67,.3)}
+.stat-card::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 0% 0%,rgba(212,168,67,.05) 0%,transparent 60%);pointer-events:none}
+.stat-ico{font-size:22px;margin-bottom:12px}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:44px;color:var(--gold2);line-height:1;letter-spacing:1px}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px}
+
+/* ── COURSE BREAKDOWN ── */
+.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+.breakdown-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+.card-title{font-size:10px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
+.course-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.course-row:last-child{margin-bottom:0}
+.course-name{font-size:13px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.course-bar-wrap{flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.course-bar{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.course-count{font-size:12px;font-weight:700;color:var(--gold);min-width:24px;text-align:right}
+
+/* recent by date */
+.date-row{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.date-row:last-child{border:none}
+.date-label{color:var(--muted)}
+.date-count{font-weight:700;color:var(--gold2)}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+.search-input{
+  width:100%;background:var(--ink2);border:1px solid var(--border);border-radius:9px;
+  padding:10px 14px 10px 36px;font-family:'Satoshi',sans-serif;font-size:13px;
+  color:white;outline:none;transition:border-color .25s;
+}
+.search-input:focus{border-color:rgba(212,168,67,.4)}
+.search-input::placeholder{color:var(--muted)}
+.filter-select{
+  background:var(--ink2);border:1px solid var(--border);border-radius:9px;
+  padding:10px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;
+  outline:none;cursor:pointer;
+}
+.filter-select option{background:var(--ink2)}
+.export-btn{
+  background:rgba(212,168,67,.1);border:1px solid var(--border);color:var(--gold);
+  padding:10px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;
+  font-family:'Satoshi',sans-serif;transition:all .2s;letter-spacing:.3px;white-space:nowrap;
+}
+.export-btn:hover{background:rgba(212,168,67,.2)}
+.leads-count{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:rgba(212,168,67,.05);border-bottom:1px solid var(--border)}
+th{padding:13px 16px;font-size:9px;font-weight:700;color:rgba(212,168,67,.5);
+  letter-spacing:2px;text-transform:uppercase;text-align:left;white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
+tbody tr:last-child{border:none}
+tbody tr:hover{background:rgba(212,168,67,.03)}
+td{padding:14px 16px;font-size:13px;vertical-align:middle}
+.td-name{font-weight:700;color:white}
+.td-wa{color:var(--green);font-size:12px}
+.td-email{color:rgba(255,255,255,.45);font-size:12px}
+.td-course{
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;
+  background:rgba(212,168,67,.08);color:var(--gold);border:1px solid rgba(212,168,67,.18);
+  letter-spacing:.5px;white-space:nowrap;display:inline-block;
+}
+.td-exp{font-size:11px;color:var(--muted)}
+.td-msg{font-size:12px;color:rgba(255,255,255,.4);max-width:180px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.td-actions{display:flex;gap:6px}
+.act-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 11px;border-radius:7px;font-size:11px;font-weight:700;
+  text-decoration:none;cursor:pointer;transition:all .2s;border:none;font-family:'Satoshi',sans-serif;
+  white-space:nowrap;
+}
+.act-wa{background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.2)}
+.act-wa:hover{background:rgba(37,211,102,.22)}
+.act-mail{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.act-mail:hover{background:rgba(59,130,246,.2)}
+
+/* ── EMPTY / LOADING ── */
+.empty{text-align:center;padding:64px 24px;color:var(--muted)}
+.empty-ico{font-size:40px;margin-bottom:12px}
+.loading-row td{text-align:center;padding:48px;color:var(--muted)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(212,168,67,.2);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+.page-btns{display:flex;gap:6px}
+.page-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;
+  font-family:'Satoshi',sans-serif;font-size:12px;transition:all .2s}
+.page-btn:hover{border-color:var(--gold);color:var(--gold)}
+.page-btn.active{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
+.page-btn:disabled{opacity:.3;cursor:default}
+
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .breakdown-grid{grid-template-columns:1fr}
+  .main{padding:16px}
+  th:nth-child(5),td:nth-child(5),
+  th:nth-child(6),td:nth-child(6){display:none}
+}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  th:nth-child(3),td:nth-child(3),
+  th:nth-child(4),td:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">HALBERG FIN</div>
+    <div class="login-sub">Admin Dashboard</div>
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="pwd" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">→ Sign In</button>
+    <div class="login-err" id="login-err">Incorrect password</div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center">
+      <span class="tb-logo">HALBERG FIN</span>
+      <span class="tb-sub">/ Admin</span>
+    </div>
+    <div class="tb-right">
+      <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
+      <button class="tb-refresh" onclick="loadData()">↻ Refresh</button>
+      <button class="tb-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="page-title">Lead Dashboard</div>
+    <div class="page-sub" id="dash-sub">Loading enquiries...</div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-ico">📋</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Total Leads</div></div>
+      <div class="stat-card"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today</div></div>
+      <div class="stat-card"><div class="stat-ico">📆</div><div class="stat-val" id="s-week">—</div><div class="stat-lbl">This Week</div></div>
+      <div class="stat-card"><div class="stat-ico">🏆</div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Course</div></div>
+    </div>
+
+    <!-- Breakdown -->
+    <div class="breakdown-grid">
+      <div class="breakdown-card">
+        <div class="card-title">Leads by Course</div>
+        <div id="course-breakdown">
+          <div style="color:var(--muted);font-size:13px">Loading...</div>
+        </div>
+      </div>
+      <div class="breakdown-card">
+        <div class="card-title">Recent Activity (Last 7 Days)</div>
+        <div id="date-breakdown">
+          <div style="color:var(--muted);font-size:13px">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" type="text" id="search" placeholder="Search by name, phone, email, course..." oninput="renderTable()"/>
+      </div>
+      <select class="filter-select" id="filter-course" onchange="renderTable()">
+        <option value="">All Courses</option>
+        <option>Beginner to Investor</option>
+        <option>Forex Trading — Basics to Advanced</option>
+        <option>Option Trading — Mind Over Markets</option>
+        <option>Trading Psychology</option>
+        <option>All 4 Courses Bundle</option>
+      </select>
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+      <span class="leads-count" id="leads-count"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>WhatsApp</th>
+            <th>Email</th>
+            <th>Course</th>
+            <th>Experience</th>
+            <th>Message</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leads-tbody">
+          <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Loading leads...</td></tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span id="page-info" style="font-size:12px;color:var(--muted)"></span>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const ADMIN_PASSWORD = 'halberg2025'; // change this
+const SUPABASE_URL   = 'https://efbqkoohmzjkguilbjlc.supabase.co';
+const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnFrb29obXpqa2d1aWxiamxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY1MDY1MDYsImV4cCI6MjA2MjA4MjUwNn0.placeholder'; // replace with your anon key
+
+const PER_PAGE = 20;
+let allLeads = [];
+let page = 1;
+
+// ── AUTH ──
+function doLogin() {
+  const val = document.getElementById('pwd').value;
+  if (val === ADMIN_PASSWORD) {
+    sessionStorage.setItem('hf_admin', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('login-err').style.display = 'block';
+    setTimeout(() => document.getElementById('login-err').style.display = 'none', 2500);
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('hf_admin');
+  location.reload();
+}
+
+// Check session
+if (sessionStorage.getItem('hf_admin')) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadData();
+}
+
+// ── LOAD DATA ──
+async function loadData() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/enquiries?select=*&order=created_at.desc`, {
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': `Bearer ${SUPABASE_ANON}`
+      }
+    });
+    if (!res.ok) throw new Error('Fetch failed');
+    allLeads = await res.json();
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN');
+    updateStats();
+    renderTable();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--red)">⚠ Failed to load data. Check Supabase anon key.</td></tr>`;
+  }
+}
+
+// ── STATS ──
+function updateStats() {
+  const total = allLeads.length;
+  const now   = new Date();
+  const today = allLeads.filter(l => new Date(l.created_at).toDateString() === now.toDateString()).length;
+  const weekAgo = new Date(now - 7*86400000);
+  const week  = allLeads.filter(l => new Date(l.created_at) >= weekAgo).length;
+
+  // top course
+  const courseCounts = {};
+  allLeads.forEach(l => { if(l.course_interest) courseCounts[l.course_interest] = (courseCounts[l.course_interest]||0)+1; });
+  const topCourse = Object.entries(courseCounts).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-today').textContent = today;
+  document.getElementById('s-week').textContent  = week;
+  document.getElementById('s-top').textContent   = topCourse ? topCourse[1] : '—';
+  document.getElementById('dash-sub').textContent = `${total} total enquiries · Last refreshed ${new Date().toLocaleTimeString('en-IN')}`;
+
+  // Course breakdown
+  const sorted = Object.entries(courseCounts).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1] || 1;
+  document.getElementById('course-breakdown').innerHTML = sorted.length ? sorted.map(([name,count])=>`
+    <div class="course-row">
+      <div class="course-name" title="${name}">${name}</div>
+      <div class="course-bar-wrap"><div class="course-bar" style="width:${Math.round(count/max*100)}%"></div></div>
+      <div class="course-count">${count}</div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">No data yet</div>';
+
+  // Date breakdown — last 7 days
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(now - i*86400000);
+    const label = d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+    const count = allLeads.filter(l=>new Date(l.created_at).toDateString()===d.toDateString()).length;
+    days.push({label,count});
+  }
+  document.getElementById('date-breakdown').innerHTML = days.map(({label,count})=>`
+    <div class="date-row">
+      <span class="date-label">${label}</span>
+      <span class="date-count">${count || '—'}</span>
+    </div>`).join('');
+}
+
+// ── TABLE ──
+function filtered() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const course = document.getElementById('filter-course').value;
+  return allLeads.filter(l => {
+    const matchQ = !q || [l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message]
+      .some(v => v && v.toLowerCase().includes(q));
+    const matchC = !course || l.course_interest === course;
+    return matchQ && matchC;
+  });
+}
+
+function renderTable() {
+  const leads = filtered();
+  const total = leads.length;
+  const pages = Math.ceil(total / PER_PAGE) || 1;
+  page = Math.min(page, pages);
+  const slice = leads.slice((page-1)*PER_PAGE, page*PER_PAGE);
+
+  document.getElementById('leads-count').textContent = `${total} lead${total!==1?'s':''}`;
+
+  if (!slice.length) {
+    document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-ico">📭</div><div>No leads found</div></div></td></tr>`;
+    document.getElementById('page-info').textContent = '';
+    document.getElementById('page-btns').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('leads-tbody').innerHTML = slice.map((l,i) => {
+    const num = (page-1)*PER_PAGE + i + 1;
+    const date = new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const waNum = (l.whatsapp||'').replace(/\D/g,'');
+    const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up on your Halberg Fin enquiry about ${l.course_interest||'our courses'}. When would be a good time to connect?`)}`;
+    const mailLink = l.email ? `mailto:${l.email}?subject=Your Halberg Fin Enquiry — ${l.course_interest||'Course'}&body=Hi ${l.first_name},%0D%0A%0D%0AThank you for your interest in ${l.course_interest||'our courses'}.` : '';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${num}</td>
+      <td><div class="td-name">${l.first_name||''} ${l.last_name||''}</div></td>
+      <td><div class="td-wa">${l.whatsapp||'—'}</div></td>
+      <td><div class="td-email">${l.email||'—'}</div></td>
+      <td><span class="td-course">${l.course_interest||'—'}</span></td>
+      <td><div class="td-exp">${(l.experience||'—').split('—')[0].trim()}</div></td>
+      <td><div class="td-msg" title="${l.message||''}">${l.message||'—'}</div></td>
+      <td><div class="td-date">${date}</div></td>
+      <td><div class="td-actions">
+        <a class="act-btn act-wa" href="${waLink}" target="_blank">💬 WA</a>
+        ${l.email ? `<a class="act-btn act-mail" href="${mailLink}">✉ Mail</a>` : ''}
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('page-info').textContent = `Page ${page} of ${pages} · Showing ${slice.length} of ${total}`;
+
+  // Page buttons
+  const btns = [];
+  btns.push(`<button class="page-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹</button>`);
+  for(let p=1;p<=pages;p++) {
+    if(pages<=7||p===1||p===pages||Math.abs(p-page)<=1)
+      btns.push(`<button class="page-btn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`);
+    else if(Math.abs(p-page)===2)
+      btns.push(`<span style="color:var(--muted);padding:0 4px">…</span>`);
+  }
+  btns.push(`<button class="page-btn" onclick="goPage(${page+1})" ${page>=pages?'disabled':''}>›</button>`);
+  document.getElementById('page-btns').innerHTML = btns.join('');
+}
+
+function goPage(p) { page = p; renderTable(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const leads = filtered();
+  const headers = ['#','First Name','Last Name','Email','WhatsApp','Course','Experience','Message','Date'];
+  const rows = leads.map((l,i) => [
+    i+1,
+    l.first_name||'',
+    l.last_name||'',
+    l.email||'',
+    l.whatsapp||'',
+    l.course_interest||'',
+    l.experience||'',
+    (l.message||'').replace(/,/g,' '),
+    new Date(l.created_at).toLocaleString('en-IN')
+  ]);
+  const csv = [headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `halbergfin-leads-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
