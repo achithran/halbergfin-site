@@ -3,495 +3,1449 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Halberg Fin — Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Satoshi:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<title>Halberg Fin — Master the Markets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=Satoshi:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
+/* ════════════════════════════════════════════════
+   DESIGN DIRECTION: Editorial Finance — dark ink
+   base, gold grain texture, kinetic typography,
+   magazine-grid layout, smooth scroll theater
+   ════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ink:#0a0e17;--ink2:#111827;--ink3:#1a2035;
-  --gold:#d4a843;--gold2:#f0c84a;
-  --cream:#faf6ed;--border:rgba(212,168,67,.15);
-  --muted:rgba(255,255,255,.35);--text:rgba(255,255,255,.85);
-  --green:#2ecc71;--red:#e74c3c;--blue:#3b82f6;
-  --r:12px;
+  --ink:#0a0e17;
+  --ink2:#111827;
+  --gold:#d4a843;
+  --gold2:#f0c84a;
+  --gold3:#f8e08a;
+  --cream:#faf6ed;
+  --off:#f2ece0;
+  --border:#e4d9c2;
+  --text:#1a1a2e;
+  --muted:#8a8070;
+  --green:#2ecc71;
+  --red:#e74c3c;
+  --white:#ffffff;
+  --r:20px;
 }
-html{font-size:15px;scroll-behavior:smooth}
-body{font-family:'Satoshi',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Satoshi',sans-serif;background:var(--cream);color:var(--text);overflow-x:hidden}
 ::selection{background:var(--gold);color:var(--ink)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
 
-/* ── NOISE ── */
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+/* ── NOISE TEXTURE OVERLAY ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  opacity:.35;mix-blend-mode:multiply}
+  opacity:.4;mix-blend-mode:multiply
+}
 
-/* ── LOGIN ── */
-#login-screen{
-  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:var(--ink);z-index:100;
+/* ── WHATSAPP FLOAT ── */
+.wa-btn{
+  position:fixed;bottom:28px;right:28px;z-index:1000;
+  display:flex;align-items:center;gap:8px;
+  background:#25d366;color:white;padding:13px 22px;border-radius:50px;
+  text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.3px;
+  box-shadow:0 8px 32px rgba(37,211,102,.5);transition:all .3s;
+  border:2px solid rgba(255,255,255,.2)
 }
-.login-box{
-  width:360px;background:var(--ink2);border:1px solid var(--border);
-  border-radius:20px;padding:44px 36px;position:relative;overflow:hidden;
-}
-.login-box::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;
-  background:radial-gradient(circle,rgba(212,168,67,.12) 0%,transparent 65%);border-radius:50%;pointer-events:none}
-.login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold2);letter-spacing:2px;margin-bottom:4px}
-.login-sub{font-size:10px;color:rgba(212,168,67,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
-.login-label{font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
-.login-input{
-  width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);
-  border-radius:9px;padding:12px 14px;font-family:'Satoshi',sans-serif;
-  font-size:14px;color:white;outline:none;transition:border-color .25s;margin-bottom:16px;
-}
-.login-input:focus{border-color:rgba(212,168,67,.5)}
-.login-input::placeholder{color:rgba(255,255,255,.2)}
-.login-btn{
-  width:100%;padding:13px;background:var(--gold);border:none;border-radius:9px;
-  font-family:'Satoshi',sans-serif;font-size:14px;font-weight:800;color:var(--ink);
-  cursor:pointer;transition:all .25s;letter-spacing:.3px;
-}
-.login-btn:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(212,168,67,.35)}
-.login-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
+.wa-btn:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 16px 40px rgba(37,211,102,.6)}
+.wa-btn .ico{font-size:18px}
+@keyframes waPulse{0%,100%{box-shadow:0 8px 32px rgba(37,211,102,.5)}50%{box-shadow:0 8px 50px rgba(37,211,102,.8)}}
 
-/* ── MAIN APP ── */
-#app{display:none}
-
-/* ── TOPBAR ── */
-.topbar{
-  position:sticky;top:0;z-index:50;
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  height:68px;display:flex;align-items:center;padding:0 5%;
+  transition:all .4s;
+}
+nav.scrolled{
   background:rgba(10,14,23,.94);backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 32px;height:60px;
+  border-bottom:1px solid rgba(212,168,67,.15);
 }
-.tb-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold2);letter-spacing:2px}
-.tb-sub{font-size:9px;color:rgba(212,168,67,.4);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
-.tb-right{display:flex;align-items:center;gap:16px}
-.tb-refresh{background:rgba(212,168,67,.1);border:1px solid var(--border);color:var(--gold);
-  padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
-  font-family:'Satoshi',sans-serif;transition:all .2s;letter-spacing:.3px}
-.tb-refresh:hover{background:rgba(212,168,67,.2)}
-.tb-logout{background:transparent;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);
-  padding:7px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s}
-.tb-logout:hover{border-color:var(--red);color:var(--red)}
+.nav-logo{display:flex;align-items:center;text-decoration:none}
+.logo-mark{width:38px;height:38px;flex-shrink:0}
+.logo-text .n1{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--gold2);letter-spacing:1px;line-height:1}
+.logo-text .n2{font-size:8px;color:rgba(212,168,67,.55);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
+.nav-links{display:flex;gap:28px;list-style:none;margin:0 auto}
+.nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:color .2s;letter-spacing:.3px}
+.nav-links a:hover{color:var(--gold2)}
+.nav-actions{display:flex;gap:9px}
+.nbtn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .25s;font-family:'Satoshi',sans-serif;letter-spacing:.3px;border:none}
+.nbtn-wa{background:#25d366;color:white;display:flex;align-items:center;gap:6px}
+.nbtn-wa:hover{background:#1ebe5d;transform:translateY(-1px)}
+.nbtn-gold{background:var(--gold);color:var(--ink)}
+.nbtn-gold:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,168,67,.4)}
 
-/* ── LAYOUT ── */
-.main{padding:32px}
-.page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;color:white;letter-spacing:1px;margin-bottom:6px}
-.page-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
-
-/* ── STATS GRID ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
-.stat-card{
-  background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);
-  padding:22px 24px;position:relative;overflow:hidden;transition:border-color .2s;
+/* ── HERO ── */
+.hero{
+  min-height:100vh;background:var(--ink);
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;gap:0;
+  padding-top:68px;overflow:hidden;position:relative
 }
-.stat-card:hover{border-color:rgba(212,168,67,.3)}
-.stat-card::before{content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at 0% 0%,rgba(212,168,67,.05) 0%,transparent 60%);pointer-events:none}
-.stat-ico{font-size:22px;margin-bottom:12px}
-.stat-val{font-family:'Bebas Neue',sans-serif;font-size:44px;color:var(--gold2);line-height:1;letter-spacing:1px}
-.stat-lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px}
-
-/* ── COURSE BREAKDOWN ── */
-.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
-.breakdown-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:24px}
-.card-title{font-size:10px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
-.course-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.course-row:last-child{margin-bottom:0}
-.course-name{font-size:13px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.course-bar-wrap{flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-.course-bar{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.course-count{font-size:12px;font-weight:700;color:var(--gold);min-width:24px;text-align:right}
-
-/* recent by date */
-.date-row{display:flex;justify-content:space-between;align-items:center;
-  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
-.date-row:last-child{border:none}
-.date-label{color:var(--muted)}
-.date-count{font-weight:700;color:var(--gold2)}
-
-/* ── TOOLBAR ── */
-.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.search-wrap{position:relative;flex:1;min-width:200px}
-.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
-.search-input{
-  width:100%;background:var(--ink2);border:1px solid var(--border);border-radius:9px;
-  padding:10px 14px 10px 36px;font-family:'Satoshi',sans-serif;font-size:13px;
-  color:white;outline:none;transition:border-color .25s;
+/* Animated grid background */
+.hero-bg{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(212,168,67,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,168,67,.06) 1px,transparent 1px);
+  background-size:60px 60px;
+  animation:gridShift 20s linear infinite;pointer-events:none
 }
-.search-input:focus{border-color:rgba(212,168,67,.4)}
-.search-input::placeholder{color:var(--muted)}
-.filter-select{
-  background:var(--ink2);border:1px solid var(--border);border-radius:9px;
-  padding:10px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;
-  outline:none;cursor:pointer;
-}
-.filter-select option{background:var(--ink2)}
-.export-btn{
-  background:rgba(212,168,67,.1);border:1px solid var(--border);color:var(--gold);
-  padding:10px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;
-  font-family:'Satoshi',sans-serif;transition:all .2s;letter-spacing:.3px;white-space:nowrap;
-}
-.export-btn:hover{background:rgba(212,168,67,.2)}
-.leads-count{font-size:12px;color:var(--muted);white-space:nowrap}
+@keyframes gridShift{0%{background-position:0 0}100%{background-position:60px 60px}}
+.hero-radial{position:absolute;top:-20%;right:-10%;width:80%;height:140%;background:radial-gradient(ellipse,rgba(212,168,67,.06) 0%,transparent 60%);pointer-events:none}
 
-/* ── TABLE ── */
-.table-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-table{width:100%;border-collapse:collapse}
-thead tr{background:rgba(212,168,67,.05);border-bottom:1px solid var(--border)}
-th{padding:13px 16px;font-size:9px;font-weight:700;color:rgba(212,168,67,.5);
-  letter-spacing:2px;text-transform:uppercase;text-align:left;white-space:nowrap}
-tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
-tbody tr:last-child{border:none}
-tbody tr:hover{background:rgba(212,168,67,.03)}
-td{padding:14px 16px;font-size:13px;vertical-align:middle}
-.td-name{font-weight:700;color:white}
-.td-wa{color:var(--green);font-size:12px}
-.td-email{color:rgba(255,255,255,.45);font-size:12px}
-.td-course{
-  font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;
-  background:rgba(212,168,67,.08);color:var(--gold);border:1px solid rgba(212,168,67,.18);
-  letter-spacing:.5px;white-space:nowrap;display:inline-block;
+.hero-left{padding:80px 5% 80px 5%;position:relative;z-index:2}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid rgba(212,168,67,.3);color:var(--gold2);
+  padding:6px 14px;border-radius:4px;font-size:10px;font-weight:700;
+  letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;
+  background:rgba(212,168,67,.06)
 }
-.td-exp{font-size:11px;color:var(--muted)}
-.td-msg{font-size:12px;color:rgba(255,255,255,.4);max-width:180px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.td-date{font-size:11px;color:var(--muted);white-space:nowrap}
-.td-actions{display:flex;gap:6px}
-.act-btn{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:6px 11px;border-radius:7px;font-size:11px;font-weight:700;
-  text-decoration:none;cursor:pointer;transition:all .2s;border:none;font-family:'Satoshi',sans-serif;
-  white-space:nowrap;
+.hero-eyebrow .pulse{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulseAnim 2s infinite}
+@keyframes pulseAnim{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+.hero-h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(72px,10vw,130px);
+  line-height:.92;letter-spacing:2px;color:#a3c7bd;
+  margin-bottom:6px;animation:fadeUp .9s ease both
 }
-.act-wa{background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.2)}
-.act-wa:hover{background:rgba(37,211,102,.22)}
-.act-mail{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
-.act-mail:hover{background:rgba(59,130,246,.2)}
+.hero-h1 .gold-line{display:block;/*color:var(--gold2);*/-webkit-text-stroke:1px var(--gold);text-shadow:0 0 60px rgba(212,168,67,.3)}
+.hero-h1 .outline-line{display:block;-webkit-text-stroke:1px rgba(255,255,255,.25);color:transparent}
 
-/* ── EMPTY / LOADING ── */
-.empty{text-align:center;padding:64px 24px;color:var(--muted)}
-.empty-ico{font-size:40px;margin-bottom:12px}
-.loading-row td{text-align:center;padding:48px;color:var(--muted)}
-.spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(212,168,67,.2);
-  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
+.hero-sub{font-size:16px;color:rgba(255,255,255,.45);line-height:1.85;max-width:480px;margin:24px 0 36px;font-weight:300;animation:fadeUp .9s .1s ease both}
+.hero-sub strong{color:rgba(255,255,255,.8);font-weight:500}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp .9s .2s ease both;margin-bottom:60px}
+.hbtn{padding:14px 28px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;transition:all .3s;display:inline-flex;align-items:center;gap:8px;letter-spacing:.3px}
+.hbtn-main{background:var(--gold);color:var(--ink)}
+.hbtn-main:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 12px 32px rgba(212,168,67,.45)}
+.hbtn-wa{background:#25d366;color:white}
+.hbtn-wa:hover{background:#1ebe5d;transform:translateY(-2px);box-shadow:0 12px 32px rgba(37,211,102,.4)}
+.hbtn-ghost{background:transparent;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.18)}
+.hbtn-ghost:hover{border-color:var(--gold);color:var(--gold2)}
 
-/* ── PAGINATION ── */
-.pagination{display:flex;align-items:center;justify-content:space-between;
-  padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
-.page-btns{display:flex;gap:6px}
-.page-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-  color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;
-  font-family:'Satoshi',sans-serif;font-size:12px;transition:all .2s}
-.page-btn:hover{border-color:var(--gold);color:var(--gold)}
-.page-btn.active{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
-.page-btn:disabled{opacity:.3;cursor:default}
+/* Stats row */
+.hero-stats{display:flex;gap:0;border-top:1px solid rgba(212,168,67,.12);padding-top:32px;animation:fadeUp .9s .3s ease both}
+.hstat{flex:1;padding-right:28px;border-right:1px solid rgba(212,168,67,.1)}
+.hstat:last-child{border:none;padding:0 0 0 28px}
+.hstat:not(:first-child):not(:last-child){padding:0 28px}
+.hstat-num{font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--gold2);line-height:1;letter-spacing:1px}
+.hstat-lbl{font-size:11px;color:rgba(255,255,255,.3);margin-top:3px;letter-spacing:.5px}
 
-@media(max-width:900px){
-  .stats-grid{grid-template-columns:1fr 1fr}
-  .breakdown-grid{grid-template-columns:1fr}
-  .main{padding:16px}
-  th:nth-child(5),td:nth-child(5),
-  th:nth-child(6),td:nth-child(6){display:none}
+/* Hero right — stacked course preview cards */
+.hero-right{position:relative;z-index:2;padding:60px 5% 60px 0;display:flex;align-items:center;justify-content:center}
+.course-stack{position:relative;width:360px;height:460px}
+.stack-card{
+  position:absolute;width:300px;border-radius:20px;padding:26px;
+  border:1px solid;transition:all .5s cubic-bezier(.34,1.56,.64,1);cursor:pointer
+}
+.stack-card.s1{background:rgba(212,168,67,.08);border-color:rgba(212,168,67,.2);top:0;left:0;transform:rotate(-4deg) translateY(0);z-index:1}
+.stack-card.s2{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);top:20px;left:30px;transform:rotate(-1deg);z-index:2}
+.stack-card.s3{background:rgba(13,20,40,.8);border-color:rgba(212,168,67,.35);top:40px;left:60px;z-index:3;backdrop-filter:blur(10px)}
+.stack-card.s3:hover{transform:translateY(-8px) rotate(1deg)}
+.sc-label{font-size:9px;color:rgba(212,168,67,.6);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.sc-title{font-family:'DM Serif Display',serif;font-size:22px;color:white;margin-bottom:10px;line-height:1.2}
+.sc-modules{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+.sc-mod{display:flex;align-items:center;gap:7px;font-size:11px;color:rgba(255,255,255,.45)}
+.sc-mod::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.sc-footer{display:flex;justify-content:space-between;align-items:center;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}
+.sc-hrs{font-size:10px;color:rgba(212,168,67,.5);font-weight:600}
+.sc-enroll{font-size:11px;font-weight:700;color:var(--gold2);background:rgba(212,168,67,.12);padding:5px 12px;border-radius:6px;border:1px solid rgba(212,168,67,.2)}
+
+/* Floating badges */
+.hero-badge{
+  position:absolute;background:var(--ink2);border:1px solid rgba(212,168,67,.2);
+  border-radius:12px;padding:12px 16px;box-shadow:0 12px 32px rgba(0,0,0,.4);
+  animation:floatY 4s ease-in-out infinite alternate
+}
+@keyframes floatY{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.hb1{top:-30px;right:0;animation-delay:0s}
+.hb2{bottom:40px;left:-20px;animation-delay:2s}
+.hb-val{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--gold2);line-height:1}
+.hb-lbl{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:1px;margin-top:2px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── TICKER ── */
+.ticker{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);border-bottom:1px solid rgba(212,168,67,.1);overflow:hidden;padding:12px 0}
+.tk-track{display:flex;width:max-content;animation:tkscroll 38s linear infinite}
+.tk-item{display:flex;align-items:center;gap:8px;padding:0 24px;border-right:1px solid rgba(255,255,255,.06);white-space:nowrap;font-size:12px}
+.tk-sym{color:rgba(212,168,67,.45);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
+.tk-price{color:rgba(255,255,255,.75);font-weight:500}
+.tk-up{color:#2ecc71;font-weight:700}.tk-dn{color:#e74c3c;font-weight:700}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ── SECTIONS ── */
+section{padding:110px 5%}
+.s-tag{font-size:9px;font-weight:700;letter-spacing:3.5px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.s-tag::before{content:'';width:24px;height:1.5px;background:var(--gold);flex-shrink:0}
+.s-title{font-family:'DM Serif Display',serif;font-size:clamp(32px,4vw,54px);color:var(--ink);line-height:1.1;margin-bottom:16px;letter-spacing:-.5px}
+.s-sub{font-size:15px;color:var(--muted);line-height:1.9;max-width:560px;font-weight:300}
+
+/* ── TRUST BAR ── */
+.trust-bar{background:var(--off);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0}
+.trust-inner{display:grid;grid-template-columns:repeat(4,1fr);border:none}
+.ti{display:flex;align-items:center;gap:14px;padding:26px 32px;border-right:1px solid var(--border);transition:background .2s}
+.ti:last-child{border:none}
+.ti:hover{background:rgba(212,168,67,.04)}
+.ti-ico{width:46px;height:46px;border-radius:12px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ti-num{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--ink);line-height:1}
+.ti-lbl{font-size:12px;color:var(--muted)}
+
+/* ── COUNTER SECTION ── */
+.counter-strip{background:var(--ink);padding:56px 5%}
+.counter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid rgba(212,168,67,.1);border-radius:20px;overflow:hidden}
+.ctr{text-align:center;padding:40px 24px;border-right:1px solid rgba(212,168,67,.08);position:relative;overflow:hidden}
+.ctr:last-child{border:none}
+.ctr::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at center bottom,rgba(212,168,67,.06) 0%,transparent 65%);pointer-events:none}
+.ctr-num{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--gold2);line-height:1;letter-spacing:2px}
+.ctr-suffix{color:rgba(212,168,67,.6);font-size:40px}
+.ctr-lbl{font-size:12px;color:rgba(255,255,255,.35);margin-top:6px;letter-spacing:.5px}
+
+/* ── WHY US ── */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.why-left{}
+.why-pts{margin-top:32px;display:flex;flex-direction:column;gap:0}
+.wpt{display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--border);cursor:default;transition:all .2s}
+.wpt:last-child{border:none}
+.wpt:hover .wpt-ico{background:var(--ink);transform:rotate(5deg)}
+.wpt-ico{width:46px;height:46px;border-radius:12px;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.2);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;transition:all .3s}
+.wpt-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;font-family:'DM Serif Display',serif}
+.wpt-desc{font-size:12px;color:var(--muted);line-height:1.7}
+
+/* Why visual */
+.why-right{position:relative}
+.why-card-main{background:var(--ink);border-radius:22px;padding:42px 36px;overflow:hidden;position:relative}
+.why-card-main::before{content:'';position:absolute;top:-50px;right:-50px;width:260px;height:260px;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 65%);border-radius:50%;pointer-events:none}
+.why-card-main::after{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(212,168,67,.05) 1px,transparent 1px);background-size:28px 28px;border-radius:22px;pointer-events:none}
+.wcm-year{font-family:'Bebas Neue',sans-serif;font-size:110px;color:rgba(212,168,67,.06);line-height:1;position:relative;z-index:1}
+.wcm-quote{font-family:'DM Serif Display',serif;font-size:20px;font-style:italic;line-height:1.6;color:rgba(255,255,255,.88);margin-top:-18px;margin-bottom:24px;position:relative;z-index:1}
+.wcm-by{font-size:10px;color:rgba(212,168,67,.45);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;margin-bottom:28px}
+.wcm-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1}
+.wcs{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.1);border-radius:10px;padding:14px}
+.wcs-num{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--gold2);line-height:1;letter-spacing:1px}
+.wcs-lbl{font-size:9px;color:rgba(255,255,255,.3);margin-top:3px;letter-spacing:.5px}
+
+/* ══════════════════════════════════════════════════════
+   COURSES — PREMIUM REDESIGN
+   Each course = distinct visual world. No duplication.
+   ══════════════════════════════════════════════════════ */
+
+/* Shared CTA buttons */
+.cp-btn{padding:13px 26px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;transition:all .3s;display:inline-flex;align-items:center;gap:8px;font-family:'Satoshi',sans-serif;border:none;cursor:pointer;letter-spacing:.3px}
+.cp-btn-gold{background:var(--gold);color:var(--ink)}
+.cp-btn-gold:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 12px 32px rgba(212,168,67,.45)}
+.cp-btn-wa{background:#25d366;color:white}
+.cp-btn-wa:hover{background:#1ebe5d;transform:translateY(-2px);box-shadow:0 12px 32px rgba(37,211,102,.4)}
+.cp-btn-ghost{background:transparent;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18)}
+.cp-btn-ghost:hover{border-color:var(--gold);color:var(--gold2)}
+.cp-btn-dark{background:var(--ink);color:white;border:1px solid rgba(255,255,255,.12)}
+.cp-btn-dark:hover{background:#1a2035;transform:translateY(-2px)}
+
+/* ── COURSES INTRO HEADER ── */
+.courses-intro{
+  background:var(--ink);padding:90px 5% 0;
+  position:relative;overflow:hidden;
+}
+.courses-intro::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(212,168,67,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(212,168,67,.04) 1px,transparent 1px);
+  background-size:52px 52px;pointer-events:none;
+}
+.courses-intro-inner{
+  position:relative;z-index:1;max-width:720px;margin:0 auto;
+  text-align:center;padding-bottom:0;
+}
+/* Animated gold line beneath header */
+.courses-intro-line{
+  width:100%;height:1px;margin-top:60px;
+  background:linear-gradient(to right,transparent,rgba(212,168,67,.4),rgba(212,168,67,.8),rgba(212,168,67,.4),transparent);
+  position:relative;z-index:1;
+}
+
+/* ════════════════════════════════════════
+   COURSE 01 — BEGINNER TO INVESTOR
+   Theme: Warm cream. Open, editorial.
+   Layout: Number watermark + left prose + right icon-card grid
+   ════════════════════════════════════════ */
+.cs1{
+  background:var(--cream);
+  padding:90px 5%;position:relative;overflow:hidden;
+}
+.cs1::before{
+  content:'01';
+  position:absolute;right:-1%;top:50%;transform:translateY(-50%);
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(220px,30vw,420px);font-weight:900;
+  color:rgba(10,14,23,.045);line-height:1;
+  pointer-events:none;user-select:none;
+}
+.cs1-inner{
+  display:grid;grid-template-columns:1fr 1.05fr;
+  gap:72px;align-items:center;
+  max-width:1180px;margin:0 auto;position:relative;z-index:1;
+}
+.cs1-label{
+  font-size:9px;font-weight:800;letter-spacing:3px;
+  text-transform:uppercase;color:var(--gold);
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.cs1-label::before{content:'';width:20px;height:1px;background:var(--gold)}
+.cs1-kicker{
+  display:inline-block;background:var(--ink);color:var(--gold2);
+  font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;
+  padding:5px 14px;border-radius:3px;margin-bottom:18px;
+}
+.cs1-h{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(38px,5vw,60px);font-weight:900;
+  color:var(--ink);line-height:.97;letter-spacing:-1.5px;margin-bottom:20px;
+}
+.cs1-desc{font-size:15px;color:var(--muted);line-height:1.88;margin-bottom:28px}
+.cs1-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+.cs1-pill{
+  font-size:11px;font-weight:600;color:var(--text);
+  background:white;padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);
+  box-shadow:0 2px 6px rgba(10,14,23,.06);
+}
+.cs1-cta{display:flex;gap:10px;flex-wrap:wrap}
+/* Right: module icon grid */
+.cs1-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+.cs1-card{
+  background:white;border:1px solid var(--border);
+  border-radius:16px;padding:20px;
+  box-shadow:0 2px 12px rgba(10,14,23,.05);
+  transition:all .3s;
+}
+.cs1-card:hover{
+  border-color:var(--gold);
+  box-shadow:0 8px 28px rgba(212,168,67,.14);
+  transform:translateY(-3px);
+}
+.cs1-card-ico{font-size:26px;margin-bottom:10px}
+.cs1-card-t{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;line-height:1.3}
+.cs1-card-s{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* ════════════════════════════════════════
+   COURSE 02 — FOREX TRADING
+   Theme: Deep blue-navy, data-heavy, kinetic
+   Layout: Wide stats left, numbered list right
+   ════════════════════════════════════════ */
+.cs2{
+  background:#070d1c;
+  padding:90px 5%;position:relative;overflow:hidden;
+}
+.cs2::before{
+  content:'';position:absolute;
+  top:0;right:0;width:55%;height:100%;
+  background:radial-gradient(ellipse at 80% 50%,rgba(37,99,235,.07) 0%,transparent 65%);
+  pointer-events:none;
+}
+.cs2::after{
+  content:'02';
+  position:absolute;left:-1%;bottom:-5%;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(220px,30vw,420px);font-weight:900;
+  color:rgba(37,99,235,.06);line-height:1;
+  pointer-events:none;user-select:none;
+}
+.cs2-inner{
+  display:grid;grid-template-columns:1fr 1.1fr;
+  gap:72px;align-items:start;
+  max-width:1180px;margin:0 auto;position:relative;z-index:1;
+}
+.cs2-label{font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(96,165,250,.7);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.cs2-label::before{content:'';width:20px;height:1px;background:rgba(96,165,250,.5)}
+.cs2-kicker{display:inline-block;background:rgba(37,99,235,.15);color:rgba(96,165,250,.9);font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;padding:5px 14px;border-radius:3px;border:1px solid rgba(37,99,235,.25);margin-bottom:18px}
+.cs2-h{font-family:'DM Serif Display',serif;font-size:clamp(36px,4.5vw,56px);font-weight:900;color:white;line-height:.97;letter-spacing:-1.5px;margin-bottom:20px}
+.cs2-desc{font-size:15px;color:rgba(255,255,255,.4);line-height:1.88;margin-bottom:32px}
+/* Stat boxes */
+.cs2-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:32px}
+.cs2-stat{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(37,99,235,.18);
+  border-radius:14px;padding:18px 16px;
+}
+.cs2-stat-v{font-family:'Bebas Neue',sans-serif;font-size:36px;color:rgba(96,165,250,.9);line-height:1;letter-spacing:1px}
+.cs2-stat-l{font-size:11px;color:rgba(255,255,255,.3);margin-top:4px;line-height:1.4}
+.cs2-cta{display:flex;gap:10px;flex-wrap:wrap}
+/* Right: numbered curriculum */
+.cs2-right-label{font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(37,99,235,.5);margin-bottom:16px}
+.cs2-list{display:flex;flex-direction:column;gap:0}
+.cs2-item{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 0;border-bottom:1px solid rgba(255,255,255,.05);
+  transition:all .2s;
+}
+.cs2-item:last-child{border:none}
+.cs2-item:hover{padding-left:6px}
+.cs2-item:hover .cs2-item-n{color:rgba(96,165,250,.9)}
+.cs2-item:hover .cs2-item-t{color:rgba(255,255,255,.8)}
+.cs2-item-n{font-family:'Bebas Neue',sans-serif;font-size:18px;color:rgba(37,99,235,.35);width:26px;flex-shrink:0;letter-spacing:1px;transition:color .2s}
+.cs2-item-t{font-size:13px;color:rgba(255,255,255,.45);transition:color .2s;line-height:1.4}
+
+/* ════════════════════════════════════════
+   COURSE 03 — OPTIONS TRADING
+   Theme: True 50/50 vertical split bg
+   Left: parchment. Right: dark ink. Magazine-editorial
+   ════════════════════════════════════════ */
+.cs3{position:relative;overflow:hidden}
+.cs3-bg-l{position:absolute;top:0;bottom:0;left:0;width:50%;background:var(--off)}
+.cs3-bg-r{position:absolute;top:0;bottom:0;right:0;width:50%;background:#0e1520}
+.cs3-inner{
+  display:grid;grid-template-columns:1fr 1fr;
+  max-width:100%;position:relative;z-index:1;
+}
+.cs3-left{
+  padding:90px 5% 90px 5%;
+  position:relative;
+}
+.cs3-left::after{
+  content:'03';
+  position:absolute;bottom:-8%;left:-2%;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(160px,22vw,300px);font-weight:900;
+  color:rgba(10,14,23,.05);line-height:1;
+  pointer-events:none;user-select:none;
+}
+.cs3-right{
+  padding:90px 5% 90px 5%;
+  background:#0e1520;position:relative;overflow:hidden;
+}
+.cs3-right::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 80% 20%,rgba(212,168,67,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.cs3-label{font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.cs3-label::before{content:'';width:20px;height:1px;background:var(--gold)}
+.cs3-kicker{display:inline-block;border:1px solid rgba(212,168,67,.3);color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;padding:5px 14px;border-radius:3px;margin-bottom:18px}
+.cs3-h{font-family:'DM Serif Display',serif;font-size:clamp(34px,4.5vw,52px);font-weight:900;color:var(--ink);line-height:.97;letter-spacing:-1.5px;margin-bottom:22px}
+.cs3-pull{
+  font-family:'DM Serif Display',serif;
+  font-size:17px;font-style:italic;
+  color:var(--ink);border-left:3px solid var(--gold);
+  padding:2px 0 2px 18px;margin-bottom:20px;line-height:1.65;
+}
+.cs3-desc{font-size:14px;color:var(--muted);line-height:1.85;margin-bottom:24px}
+.cs3-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.cs3-pill{font-size:11px;color:var(--muted);background:white;padding:5px 12px;border-radius:6px;border:1px solid var(--border)}
+.cs3-cta{display:flex;gap:10px;flex-wrap:wrap}
+/* Right curriculum */
+.cs3-r-label{font-size:9px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(212,168,67,.45);margin-bottom:18px;position:relative;z-index:1}
+.cs3-mods{display:flex;flex-direction:column;gap:0;position:relative;z-index:1}
+.cs3-mod{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.cs3-mod:last-child{border:none}
+.cs3-mod-ico{width:28px;height:28px;border-radius:8px;background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.15);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cs3-mod-t{font-size:13px;color:rgba(255,255,255,.5);line-height:1.45}
+/* Callout box */
+.cs3-callout{
+  margin-top:20px;
+  background:rgba(212,168,67,.07);
+  border:1px solid rgba(212,168,67,.2);
+  border-radius:12px;padding:18px;
+  position:relative;z-index:1;
+}
+.cs3-callout-t{font-size:12px;font-weight:700;color:var(--gold2);margin-bottom:5px}
+.cs3-callout-d{font-size:11px;color:rgba(255,255,255,.4);line-height:1.65}
+
+/* ════════════════════════════════════════
+   COURSE 04 — TRADING PSYCHOLOGY (FLAGSHIP)
+   Theme: Rich dark gold gradient. Full-width cinematic.
+   Massive centered type. 2-col body. Signature CTA bar.
+   ════════════════════════════════════════ */
+.cs4{
+  background:linear-gradient(160deg,#060a10 0%,#0d1008 50%,#090c04 100%);
+  padding:100px 5%;position:relative;overflow:hidden;
+}
+.cs4::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%,rgba(212,168,67,.12) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 60% at 5% 80%,rgba(212,168,67,.06) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 60% at 95% 20%,rgba(212,168,67,.05) 0%,transparent 55%);
+  pointer-events:none;
+}
+.cs4::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(rgba(212,168,67,.045) 1px,transparent 1px);
+  background-size:28px 28px;pointer-events:none;
+}
+.cs4-inner{max-width:1040px;margin:0 auto;position:relative;z-index:1}
+/* Top bar */
+.cs4-topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-bottom:28px;margin-bottom:56px;
+  border-bottom:1px solid rgba(212,168,67,.15);
+}
+.cs4-sig{
+  background:var(--gold);color:var(--ink);
+  font-family:'Bebas Neue',sans-serif;font-size:11px;
+  letter-spacing:3px;padding:7px 18px;border-radius:4px;
+}
+.cs4-coursenum{
+  font-family:'Bebas Neue',sans-serif;font-size:13px;
+  color:rgba(212,168,67,.25);letter-spacing:4px;
+}
+/* Giant centered headline */
+.cs4-hero{text-align:center;margin-bottom:64px}
+.cs4-eyebrow{font-size:10px;color:rgba(212,168,67,.45);letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
+.cs4-h{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(52px,7.5vw,96px);
+  color:white;line-height:.92;letter-spacing:-2.5px;margin-bottom:22px;
+}
+.cs4-h span{color:var(--gold2);font-style:italic}
+.cs4-sub{font-size:16px;color:rgba(255,255,255,.4);max-width:580px;margin:0 auto;line-height:1.88}
+/* Body 2 col */
+.cs4-body{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-bottom:52px}
+.cs4-col-h{font-size:9px;font-weight:800;color:rgba(212,168,67,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}
+.cs4-mods{display:flex;flex-direction:column;gap:8px}
+.cs4-mod{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:13px 16px;
+  background:rgba(212,168,67,.04);
+  border:1px solid rgba(212,168,67,.09);
+  border-radius:10px;transition:all .25s;
+}
+.cs4-mod:hover{background:rgba(212,168,67,.09);border-color:rgba(212,168,67,.22)}
+.cs4-mod-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:5px}
+.cs4-mod-t{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5}
+/* Perks col */
+.cs4-perks{display:flex;flex-direction:column;gap:10px}
+.cs4-perk{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:16px 18px;
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;transition:all .25s;
+}
+.cs4-perk:hover{border-color:rgba(212,168,67,.2);background:rgba(212,168,67,.04)}
+.cs4-perk-ico{font-size:20px;flex-shrink:0;margin-top:1px}
+.cs4-perk-t{font-size:13px;font-weight:700;color:white;margin-bottom:3px}
+.cs4-perk-d{font-size:11px;color:rgba(255,255,255,.32);line-height:1.55}
+/* Bottom CTA bar */
+.cs4-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:24px;flex-wrap:wrap;
+  background:rgba(212,168,67,.07);
+  border:1px solid rgba(212,168,67,.22);
+  border-radius:18px;padding:28px 36px;
+  position:relative;overflow:hidden;
+}
+.cs4-bar::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 0% 50%,rgba(212,168,67,.08) 0%,transparent 55%);
+  pointer-events:none;
+}
+.cs4-bar-t{font-family:'DM Serif Display',serif;font-size:22px;color:var(--gold2);margin-bottom:5px;position:relative;z-index:1}
+.cs4-bar-s{font-size:12px;color:rgba(255,255,255,.3);position:relative;z-index:1}
+.cs4-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;position:relative;z-index:1}
+.cs4-chip{font-size:10px;color:rgba(212,168,67,.6);background:rgba(212,168,67,.07);padding:4px 11px;border-radius:5px;border:1px solid rgba(212,168,67,.15)}
+.cs4-bar-cta{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+
+/* ── BUNDLE ── */
+.cs-bundle{
+  background:var(--ink2);
+  padding:0 5% 80px;
+}
+.cs-bundle-inner{
+  max-width:1180px;margin:0 auto;
+  background:linear-gradient(135deg,rgba(212,168,67,.08) 0%,rgba(212,168,67,.04) 100%);
+  border:1px solid rgba(212,168,67,.22);
+  border-radius:18px;padding:30px 40px;
+  display:flex;justify-content:space-between;align-items:center;
+  gap:24px;flex-wrap:wrap;position:relative;overflow:hidden;
+}
+.cs-bundle-inner::before{
+  content:'';position:absolute;
+  top:-60px;left:-60px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(212,168,67,.08) 0%,transparent 65%);
+  pointer-events:none;border-radius:50%;
+}
+.cs-bundle-t{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold2);letter-spacing:1px;margin-bottom:5px;position:relative;z-index:1}
+.cs-bundle-s{font-size:13px;color:rgba(255,255,255,.38);position:relative;z-index:1}
+.cs-bundle-btns{display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+
+/* Responsive */
+@media(max-width:960px){
+  .cs1-inner,.cs2-inner{grid-template-columns:1fr;gap:48px}
+  .cs3-inner{grid-template-columns:1fr}
+  .cs3-bg-l,.cs3-bg-r{display:none}
+  .cs3-left{background:var(--off);padding:70px 4%}
+  .cs3-right{background:#0e1520;padding:70px 4%}
+  .cs4-body{grid-template-columns:1fr}
+  .cs1-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:600px){
-  .stats-grid{grid-template-columns:1fr 1fr}
-  th:nth-child(3),td:nth-child(3),
-  th:nth-child(4),td:nth-child(4){display:none}
+  .cs1,.cs2,.cs4{padding:60px 4%}
+  .cs1-grid{grid-template-columns:1fr}
+  .cs2-stats{grid-template-columns:1fr 1fr}
+  .cs4-h{font-size:clamp(42px,11vw,64px)}
+  .cs4-bar,.cs-bundle-inner{flex-direction:column;text-align:center}
+  .cs4-bar-cta,.cs-bundle-btns{justify-content:center}
+}
+
+/* ══════════════════════════════════════
+   TESTIMONIALS — HORIZONTAL SLIDER
+   ══════════════════════════════════════ */
+.slider-section{background:var(--off);overflow:hidden}
+.slider-hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px;flex-wrap:wrap;gap:16px}
+.slider-controls{display:flex;gap:10px}
+.sl-btn{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--border);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;font-size:16px}
+.sl-btn:hover{background:var(--ink);border-color:var(--ink);color:white}
+.sl-btn.active-ctrl{background:var(--ink);border-color:var(--ink);color:white}
+
+.slider-track-wrap{overflow:hidden;position:relative;margin:0 -5%}
+.slider-track{display:flex;gap:20px;transition:transform .5s cubic-bezier(.4,0,.2,1);padding:0 5%}
+.slide{min-width:360px;max-width:360px;flex-shrink:0}
+.tc{background:white;border:1px solid var(--border);border-radius:20px;padding:30px;transition:all .3s;height:100%}
+.tc:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(10,14,23,.1);border-color:rgba(212,168,67,.3)}
+.tc-stars{color:var(--gold);font-size:14px;letter-spacing:1.5px;margin-bottom:14px}
+.tc-quote{font-family:'DM Serif Display',serif;font-size:17px;font-style:italic;color:var(--ink);line-height:1.65;margin-bottom:22px}
+.tc-author{display:flex;align-items:center;gap:12px}
+.tc-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white;flex-shrink:0}
+.tc-name{font-size:14px;font-weight:700;color:var(--ink)}
+.tc-role{font-size:11px;color:var(--muted);margin-top:2px}
+.tc-course{font-size:10px;font-weight:700;color:var(--gold);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+
+/* Slider dots */
+.slider-dots{display:flex;gap:8px;justify-content:center;margin-top:28px}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .25s}
+.sdot.active{width:24px;border-radius:4px;background:var(--ink)}
+
+/* ══════════════════════════════════════
+   INSTRUCTORS — HORIZONTAL SCROLL CARDS
+   ══════════════════════════════════════ */
+.inst-section{background:var(--cream)}
+.inst-hdr{text-align:center;margin-bottom:48px}
+.inst-track{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ic{background:white;border:1px solid var(--border);border-radius:20px;padding:32px 26px;text-align:center;transition:all .3s;position:relative;overflow:hidden}
+.ic::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(to right,var(--gold),var(--gold2));transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.ic:hover{transform:translateY(-6px);box-shadow:0 20px 48px rgba(10,14,23,.1);border-color:rgba(212,168,67,.25)}
+.ic:hover::before{transform:scaleX(1)}
+.ic-av{width:80px;height:80px;border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:white;font-family:'Bebas Neue',sans-serif;letter-spacing:1px;position:relative}
+.ic-av::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1.5px solid rgba(212,168,67,.3)}
+.ic-name{font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);margin-bottom:3px}
+.ic-role{font-size:10px;color:var(--gold);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.ic-bio{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:18px}
+.ic-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.ict{font-size:9px;font-weight:700;padding:3px 9px;border-radius:4px;background:rgba(212,168,67,.08);color:var(--gold);border:1px solid rgba(212,168,67,.2);letter-spacing:.5px;text-transform:uppercase}
+
+/* ══════════════════════════════════════
+   FAQ — ACCORDION
+   ══════════════════════════════════════ */
+.faq-section{background:var(--off);border-top:1px solid var(--border)}
+.faq-hdr{text-align:center;max-width:520px;margin:0 auto 48px}
+.faq-list{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.faq-item{background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .25s}
+.faq-item.open{border-color:rgba(212,168,67,.35)}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;cursor:pointer;gap:16px;user-select:none}
+.faq-q-text{font-size:15px;font-weight:600;color:var(--ink)}
+.faq-arrow{width:32px;height:32px;border-radius:50%;background:var(--off);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;font-size:16px;color:var(--ink)}
+.faq-item.open .faq-arrow{background:var(--ink);color:white;transform:rotate(45deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1),padding .3s}
+.faq-item.open .faq-a{max-height:300px}
+.faq-a-inner{padding:0 24px 20px;font-size:13px;color:var(--muted);line-height:1.8}
+
+/* ══════════════════════════════════════
+   CTA SECTION
+   ══════════════════════════════════════ */
+.cta-section{background:var(--ink);position:relative;overflow:hidden;text-align:center}
+.cta-section::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(212,168,67,.07) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+.cta-glow{position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(212,168,67,.1) 0%,transparent 65%);pointer-events:none}
+.cta-inner{position:relative;z-index:1}
+.cta-inner .s-tag{justify-content:center;color:var(--gold)}
+.cta-inner .s-title{color:white;max-width:620px;margin:0 auto 14px}
+.cta-desc{font-size:16px;color:rgba(255,255,255,.4);max-width:520px;margin:0 auto 40px;font-weight:300;line-height:1.9}
+.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+
+/* CTA cards */
+.cta-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:780px;margin:0 auto}
+.cta-card{background:rgba(255,255,255,.04);border:1px solid rgba(212,168,67,.12);border-radius:14px;padding:24px;text-align:center;transition:all .25s}
+.cta-card:hover{border-color:rgba(212,168,67,.3);background:rgba(212,168,67,.06)}
+.cta-card-ico{font-size:26px;margin-bottom:10px}
+.cta-card-title{font-size:14px;font-weight:700;color:white;margin-bottom:5px}
+.cta-card-sub{font-size:12px;color:rgba(255,255,255,.3);line-height:1.6}
+
+/* ══════════════════════════════════════
+   CONTACT
+   ══════════════════════════════════════ */
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start}
+.contact-left{}
+.contact-methods{margin-top:28px;display:flex;flex-direction:column;gap:12px}
+.cm{display:flex;gap:14px;align-items:center;padding:18px 20px;background:var(--off);border:1.5px solid var(--border);border-radius:14px;text-decoration:none;transition:all .25s}
+.cm:hover{border-color:rgba(212,168,67,.35);transform:translateX(4px);box-shadow:0 6px 20px rgba(10,14,23,.08)}
+.cm-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.cm-ico.wa{background:#25d36618;border:1px solid #25d36625}
+.cm-ico.ph{background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.2)}
+.cm-ico.em{background:rgba(10,14,23,.06);border:1px solid var(--border)}
+.cm-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px}
+.cm-val{font-size:15px;font-weight:700;color:var(--ink)}
+.cm-arrow{margin-left:auto;color:var(--gold);font-size:20px}
+
+.cf-wrap{background:var(--ink);border-radius:24px;padding:40px;position:relative;overflow:hidden}
+.cf-wrap::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 65%);border-radius:50%;pointer-events:none}
+.cf-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--gold2);margin-bottom:24px;position:relative;z-index:1}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;position:relative;z-index:1}
+.fg label{font-size:9px;font-weight:700;color:rgba(212,168,67,.55);letter-spacing:2px;text-transform:uppercase}
+.fg input,.fg select,.fg textarea{background:rgba(255,255,255,.05);border:1px solid rgba(212,168,67,.14);border-radius:9px;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;transition:border-color .25s;resize:none;width:100%}
+.fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.2)}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:rgba(212,168,67,.45)}
+.fg select{cursor:pointer}.fg select option{background:var(--ink);color:white}
+.fg textarea{height:80px}
+.f-sub{width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;font-family:'Satoshi',sans-serif;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;transition:all .3s;position:relative;z-index:1;letter-spacing:.3px}
+.f-sub:hover{background:var(--gold2);box-shadow:0 10px 28px rgba(212,168,67,.45);transform:translateY(-1px)}
+
+/* ── FOOTER ── */
+footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgba(255,255,255,.35);padding:64px 5% 28px}
+.fg-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:44px;margin-bottom:48px}
+.fb-name{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold2);letter-spacing:2px;margin-bottom:3px}
+.fb-tag{font-size:8px;color:rgba(212,168,67,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+.fb-desc{font-size:12px;line-height:1.85;color:rgba(255,255,255,.28);max-width:250px;margin-bottom:20px}
+.fb-socs{display:flex;gap:8px}
+.fsoc{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;font-size:13px;text-decoration:none;color:rgba(255,255,255,.3);transition:all .2s}
+.fsoc:hover{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.fc-ttl{font-size:9px;font-weight:700;color:rgba(212,168,67,.45);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:16px}
+.fc-links{list-style:none;display:flex;flex-direction:column;gap:9px}
+.fc-links a{font-size:12px;color:rgba(255,255,255,.28);text-decoration:none;transition:color .2s}
+.fc-links a:hover{color:var(--gold2)}
+.footer-bot{border-top:1px solid rgba(255,255,255,.06);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.f-copy{font-size:11px;color:rgba(255,255,255,.18)}
+.f-leg{display:flex;gap:18px}
+.f-leg a{font-size:11px;color:rgba(255,255,255,.18);text-decoration:none;transition:color .2s}
+.f-leg a:hover{color:rgba(255,255,255,.5)}
+
+/* ── SCROLL REVEAL ── */
+.rev{opacity:0;transform:translateY(28px);transition:opacity .75s,transform .75s}
+.rev-l{opacity:0;transform:translateX(-28px);transition:opacity .75s,transform .75s}
+.rev-r{opacity:0;transform:translateX(28px);transition:opacity .75s,transform .75s}
+.vis{opacity:1!important;transform:none!important}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .hero{grid-template-columns:1fr}.hero-right{display:none}
+  .why-grid,.contact-grid{grid-template-columns:1fr}
+  .cp-grid{grid-template-columns:1fr}.inst-track{grid-template-columns:1fr 1fr}
+  .counter-grid{grid-template-columns:1fr 1fr}.fg-grid{grid-template-columns:1fr 1fr}
+  .trust-inner{grid-template-columns:1fr 1fr}
+}
+@media(max-width:700px){
+  nav{padding:0 4%}.nav-links,.nav-actions{display:none}
+  section{padding:70px 4%}.hero{padding:110px 4% 60px}
+  .hero-stats{flex-direction:column;gap:16px}.hstat{border:none;padding:0}
+  .inst-track,.counter-grid,.cta-cards,.faq-grid{grid-template-columns:1fr}
+  .fg-grid{grid-template-columns:1fr}.frow{grid-template-columns:1fr}
+  .trust-inner{grid-template-columns:1fr}.slider-track{padding:0 4%}
+  .slide{min-width:290px;max-width:290px}
+  .footer-bot{flex-direction:column;text-align:center}
+  .course-tabs{max-width:100%}.ctab{flex:none;padding:10px 12px}
 }
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN ══ -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">HALBERG FIN</div>
-    <div class="login-sub">Admin Dashboard</div>
-    <label class="login-label">Password</label>
-    <input class="login-input" type="password" id="pwd" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="login-btn" onclick="doLogin()">→ Sign In</button>
-    <div class="login-err" id="login-err">Incorrect password</div>
+<!-- ══ WHATSAPP FLOAT ══ -->
+<a href="https://wa.me/918113849211?text=Hi%20Halberg%20Fin%2C%20I%20want%20to%20know%20more%20about%20your%20trading%20courses" class="wa-btn" target="_blank">
+  <span class="ico">💬</span> WhatsApp Us
+</a>
+
+<!-- ══ NAV ══ -->
+<nav id="nav">
+  <a href="#home" class="nav-logo">
+    <img src="/images/logo.png" alt="Halberg Fin" style="height:38px;width:auto;filter:brightness(0) invert(1);"/>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#courses">Courses</a></li>
+    <li><a href="#instructors">Mentors</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="https://wa.me/918113849211" class="nbtn nbtn-wa" target="_blank">💬 WhatsApp</a>
+    <a href="tel:+918113849211" class="nbtn nbtn-gold">📞 Call Now</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero" id="home">
+  <div class="hero-bg"></div>
+  <div class="hero-radial"></div>
+
+  <div class="hero-left">
+    <div class="hero-eyebrow"><span class="pulse"></span>SEBI Registered · Est. 2010</div>
+    <h1 class="hero-h1">
+      TRADE<br>
+      <span class="gold-line">SMARTER.</span><br>
+      <span class="outline-line">MASTER IT.</span>
+    </h1>
+    <p class="hero-sub">India's most comprehensive trading education — from <strong>beginner investing</strong> to <strong>advanced forex, options</strong> and <strong>trading psychology</strong>. Built by market veterans, designed for real results.</p>
+    <div class="hero-btns">
+      <a href="#courses" class="hbtn hbtn-main">🎓 Explore Courses</a>
+      <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20know%20about%20trading%20courses" class="hbtn hbtn-wa" target="_blank">💬 WhatsApp Now</a>
+      <a href="tel:+918113849211" class="hbtn hbtn-ghost">📞 Call Us</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-num" data-count="8500" data-suffix="+">8500+</div><div class="hstat-lbl">Students Trained</div></div>
+      <div class="hstat"><div class="hstat-num">4</div><div class="hstat-lbl">Expert Courses</div></div>
+      <div class="hstat"><div class="hstat-num" data-count="14" data-suffix="yrs">14yrs</div><div class="hstat-lbl">Market Experience</div></div>
+      <div class="hstat"><div class="hstat-num" data-count="98" data-suffix="%">98%</div><div class="hstat-lbl">Satisfaction Rate</div></div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="course-stack">
+      <div class="stack-card s1">
+        <div class="sc-label">Course 02</div>
+        <div class="sc-title">Forex Trading</div>
+      </div>
+      <div class="stack-card s2">
+        <div class="sc-label">Course 03</div>
+        <div class="sc-title">Options — Mind Over Markets</div>
+      </div>
+      <div class="stack-card s3">
+        <div class="sc-label">⭐ Signature Course</div>
+        <div class="sc-title">Trading Psychology</div>
+        <div class="sc-modules">
+          <div class="sc-mod">Neuroscience of trading decisions</div>
+          <div class="sc-mod">Revenge trading & FOMO elimination</div>
+          <div class="sc-mod">Personal emotion gate system</div>
+          <div class="sc-mod">Live TradeGuard access included</div>
+        </div>
+        <div class="sc-footer">
+          <div class="sc-hrs">📚 50 hrs · 14 Modules</div>
+          <div class="sc-enroll">Enrol →</div>
+        </div>
+      </div>
+      <div class="hero-badge hb1">
+        <div class="hb-val">8,500+</div>
+        <div class="hb-lbl">Students Trained</div>
+      </div>
+      <div class="hero-badge hb2">
+        <div class="hb-val">98%</div>
+        <div class="hb-lbl">Satisfaction Rate</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TICKER ══ -->
+<div class="ticker">
+  <div class="tk-track">
+    <div class="tk-item"><span class="tk-sym">NIFTY 50</span><span class="tk-price">22,451</span><span class="tk-up">▲+1.2%</span></div>
+    <div class="tk-item"><span class="tk-sym">SENSEX</span><span class="tk-price">73,982</span><span class="tk-up">▲+0.9%</span></div>
+    <div class="tk-item"><span class="tk-sym">RELIANCE</span><span class="tk-price">₹2,481</span><span class="tk-up">▲+1.8%</span></div>
+    <div class="tk-item"><span class="tk-sym">HDFC BANK</span><span class="tk-price">₹1,645</span><span class="tk-dn">▼-0.4%</span></div>
+    <div class="tk-item"><span class="tk-sym">EUR/USD</span><span class="tk-price">1.0842</span><span class="tk-up">▲+0.3%</span></div>
+    <div class="tk-item"><span class="tk-sym">GOLD</span><span class="tk-price">₹72,840</span><span class="tk-up">▲+0.5%</span></div>
+    <div class="tk-item"><span class="tk-sym">CRUDEOIL</span><span class="tk-price">₹6,824</span><span class="tk-dn">▼-0.6%</span></div>
+    <div class="tk-item"><span class="tk-sym">BTC/USD</span><span class="tk-price">$63,420</span><span class="tk-up">▲+2.1%</span></div>
+    <div class="tk-item"><span class="tk-sym">NIFTY BANK</span><span class="tk-price">48,210</span><span class="tk-up">▲+1.4%</span></div>
+    <div class="tk-item"><span class="tk-sym">TCS</span><span class="tk-price">₹3,842</span><span class="tk-up">▲+1.9%</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="tk-item"><span class="tk-sym">NIFTY 50</span><span class="tk-price">22,451</span><span class="tk-up">▲+1.2%</span></div>
+    <div class="tk-item"><span class="tk-sym">SENSEX</span><span class="tk-price">73,982</span><span class="tk-up">▲+0.9%</span></div>
+    <div class="tk-item"><span class="tk-sym">RELIANCE</span><span class="tk-price">₹2,481</span><span class="tk-up">▲+1.8%</span></div>
+    <div class="tk-item"><span class="tk-sym">HDFC BANK</span><span class="tk-price">₹1,645</span><span class="tk-dn">▼-0.4%</span></div>
+    <div class="tk-item"><span class="tk-sym">EUR/USD</span><span class="tk-price">1.0842</span><span class="tk-up">▲+0.3%</span></div>
+    <div class="tk-item"><span class="tk-sym">GOLD</span><span class="tk-price">₹72,840</span><span class="tk-up">▲+0.5%</span></div>
+    <div class="tk-item"><span class="tk-sym">CRUDEOIL</span><span class="tk-price">₹6,824</span><span class="tk-dn">▼-0.6%</span></div>
+    <div class="tk-item"><span class="tk-sym">BTC/USD</span><span class="tk-price">$63,420</span><span class="tk-up">▲+2.1%</span></div>
+    <div class="tk-item"><span class="tk-sym">NIFTY BANK</span><span class="tk-price">48,210</span><span class="tk-up">▲+1.4%</span></div>
+    <div class="tk-item"><span class="tk-sym">TCS</span><span class="tk-price">₹3,842</span><span class="tk-up">▲+1.9%</span></div>
   </div>
 </div>
 
-<!-- ══ APP ══ -->
-<div id="app">
-  <div class="topbar">
-    <div style="display:flex;align-items:center">
-      <span class="tb-logo">HALBERG FIN</span>
-      <span class="tb-sub">/ Admin</span>
-    </div>
-    <div class="tb-right">
-      <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
-      <button class="tb-refresh" onclick="loadData()">↻ Refresh</button>
-      <button class="tb-logout" onclick="logout()">Sign Out</button>
-    </div>
-  </div>
-
-  <div class="main">
-    <div class="page-title">Lead Dashboard</div>
-    <div class="page-sub" id="dash-sub">Loading enquiries...</div>
-
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-ico">📋</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Total Leads</div></div>
-      <div class="stat-card"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today</div></div>
-      <div class="stat-card"><div class="stat-ico">📆</div><div class="stat-val" id="s-week">—</div><div class="stat-lbl">This Week</div></div>
-      <div class="stat-card"><div class="stat-ico">🏆</div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Course</div></div>
-    </div>
-
-    <!-- Breakdown -->
-    <div class="breakdown-grid">
-      <div class="breakdown-card">
-        <div class="card-title">Leads by Course</div>
-        <div id="course-breakdown">
-          <div style="color:var(--muted);font-size:13px">Loading...</div>
-        </div>
-      </div>
-      <div class="breakdown-card">
-        <div class="card-title">Recent Activity (Last 7 Days)</div>
-        <div id="date-breakdown">
-          <div style="color:var(--muted);font-size:13px">Loading...</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="toolbar">
-      <div class="search-wrap">
-        <span class="search-ico">🔍</span>
-        <input class="search-input" type="text" id="search" placeholder="Search by name, phone, email, course..." oninput="renderTable()"/>
-      </div>
-      <select class="filter-select" id="filter-course" onchange="renderTable()">
-        <option value="">All Courses</option>
-        <option>Beginner to Investor</option>
-        <option>Forex Trading — Basics to Advanced</option>
-        <option>Option Trading — Mind Over Markets</option>
-        <option>Trading Psychology</option>
-        <option>All 4 Courses Bundle</option>
-      </select>
-      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
-      <span class="leads-count" id="leads-count"></span>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>WhatsApp</th>
-            <th>Email</th>
-            <th>Course</th>
-            <th>Experience</th>
-            <th>Message</th>
-            <th>Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="leads-tbody">
-          <tr class="loading-row"><td colspan="9"><span class="spinner"></span>Loading leads...</td></tr>
-        </tbody>
-      </table>
-      <div class="pagination">
-        <span id="page-info" style="font-size:12px;color:var(--muted)"></span>
-        <div class="page-btns" id="page-btns"></div>
-      </div>
-    </div>
+<!-- ══ TRUST BAR ══ -->
+<div class="trust-bar">
+  <div class="trust-inner">
+    <div class="ti"><div class="ti-ico">🎯</div><div><div class="ti-num">Live Market Sessions</div><div class="ti-lbl">Real charts, real trades every week</div></div></div>
+    <div class="ti"><div class="ti-ico">🧠</div><div><div class="ti-num">Emotion-Intelligent</div><div class="ti-lbl">Psychology in every module</div></div></div>
+    <div class="ti"><div class="ti-ico">🏆</div><div><div class="ti-num">Certified Courses</div><div class="ti-lbl">Industry-recognised credentials</div></div></div>
+    <div class="ti"><div class="ti-ico">💬</div><div><div class="ti-num">WhatsApp Mentorship</div><div class="ti-lbl">Direct access to instructors</div></div></div>
   </div>
 </div>
+
+<!-- ══ ANIMATED COUNTERS ══ -->
+<div class="counter-strip">
+  <div class="counter-grid">
+    <div class="ctr rev"><div class="ctr-num"><span class="count" data-target="8500">0</span><span class="ctr-suffix">+</span></div><div class="ctr-lbl">Students Trained</div></div>
+    <div class="ctr rev"><div class="ctr-num"><span class="count" data-target="14">0</span><span class="ctr-suffix">yrs</span></div><div class="ctr-lbl">Market Experience</div></div>
+    <div class="ctr rev"><div class="ctr-num"><span class="count" data-target="4">0</span></div><div class="ctr-lbl">Premium Courses</div></div>
+    <div class="ctr rev"><div class="ctr-num"><span class="count" data-target="98">0</span><span class="ctr-suffix">%</span></div><div class="ctr-lbl">Satisfaction Rate</div></div>
+  </div>
+</div>
+
+<!-- ══ WHY US ══ -->
+<section id="about">
+  <div class="why-grid">
+    <div class="rev-l">
+      <div class="why-card-main">
+        <div class="wcm-year">14</div>
+        <div class="wcm-quote">"Most traders lose not because they lack knowledge — they lose because they cannot control themselves."</div>
+        <div class="wcm-by">— Henrik J. Halberg, Founder</div>
+        <div class="wcm-stats">
+          <div class="wcs"><div class="wcs-num">8,500+</div><div class="wcs-lbl">Students</div></div>
+          <div class="wcs"><div class="wcs-num">14 yrs</div><div class="wcs-lbl">Experience</div></div>
+          <div class="wcs"><div class="wcs-num">4</div><div class="wcs-lbl">Courses</div></div>
+          <div class="wcs"><div class="wcs-num">98%</div><div class="wcs-lbl">Satisfaction</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="rev-r">
+      <div class="s-tag">Why Halberg Fin</div>
+      <div class="s-title">We Don't Just Teach Trading. We Teach Traders.</div>
+      <p class="s-sub">Most courses teach charts and indicators. We go deeper — 74% of trading losses come from emotional decisions, not lack of technical knowledge.</p>
+      <div class="why-pts">
+        <div class="wpt"><div class="wpt-ico">📊</div><div><div class="wpt-title">Live Market Sessions Every Week</div><div class="wpt-desc">Learn on real charts with real market analysis, live entry-exit decisions, and trade reviews every single week.</div></div></div>
+        <div class="wpt"><div class="wpt-ico">🧠</div><div><div class="wpt-title">Emotional Intelligence in Every Course</div><div class="wpt-desc">Our TradeGuard framework is woven into every module — teaching you to identify and control revenge trading, FOMO, overconfidence, and panic.</div></div></div>
+        <div class="wpt"><div class="wpt-ico">💬</div><div><div class="wpt-title">Direct WhatsApp Mentor Access</div><div class="wpt-desc">Every student gets direct WhatsApp access to their course mentor. Ask questions, share trades, get feedback — no bots, no waiting.</div></div></div>
+        <div class="wpt"><div class="wpt-ico">📜</div><div><div class="wpt-title">SEBI Registered & Fully Compliant</div><div class="wpt-desc">All education delivered under SEBI's Investment Advisor framework. Regulated, credible, serious.</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ COURSES — PREMIUM REDESIGN ══ -->
+<div id="courses">
+
+  <!-- Intro header -->
+  <div class="courses-intro">
+    <div class="courses-intro-inner rev">
+      <div class="s-tag" style="justify-content:center">Our 4 Programmes</div>
+      <div class="s-title" style="color:white;font-size:clamp(34px,5vw,58px)">Every Level.<br>One Goal.</div>
+      <p class="s-sub" style="color:rgba(255,255,255,.38);margin:0 auto;margin-top:12px">Scroll through all four courses — each built differently, because each serves a completely different trader at a completely different stage.</p>
+    </div>
+    <div class="courses-intro-line"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       COURSE 01 — BEGINNER TO INVESTOR
+       Warm cream. Open, welcoming. Icon card grid.
+       ══════════════════════════════════════════ -->
+  <div class="cs1 rev">
+    <div class="cs1-inner">
+      <div>
+        <div class="cs1-label">Course One</div>
+        <div class="cs1-kicker">🌱 No Experience Needed</div>
+        <h2 class="cs1-h">Beginner<br>to Investor</h2>
+        <p class="cs1-desc">Start from absolute zero and build a rock-solid investment foundation. Understand markets, evaluate assets, and construct your first long-term wealth plan — no prior knowledge required whatsoever.</p>
+        <div class="cs1-pills">
+          <div class="cs1-pill">📚 8 Modules</div>
+          <div class="cs1-pill">⏱ 24 Hours</div>
+          <div class="cs1-pill">🎥 Live + Recorded</div>
+          <div class="cs1-pill">🏆 Certificate</div>
+        </div>
+        <div class="cs1-cta">
+          <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20enquire%20about%20the%20Beginner%20to%20Investor%20course" class="cp-btn cp-btn-wa" target="_blank">💬 WhatsApp to Enquire</a>
+          <a href="tel:+918113849211" class="cp-btn cp-btn-dark">📞 Call Us</a>
+        </div>
+      </div>
+      <div>
+        <div class="cs1-grid">
+          <div class="cs1-card"><div class="cs1-card-ico">🏛</div><div class="cs1-card-t">Stock Markets</div><div class="cs1-card-s">NSE, BSE and how global exchanges work</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">📊</div><div class="cs1-card-t">Mutual Funds & ETFs</div><div class="cs1-card-s">SIPs, NAV, types of funds and how to pick them</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">⚖️</div><div class="cs1-card-t">Risk & Allocation</div><div class="cs1-card-s">Risk profiling, asset allocation basics</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">🎯</div><div class="cs1-card-t">Goal-Based Investing</div><div class="cs1-card-s">Retirement, education, wealth milestones</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">📋</div><div class="cs1-card-t">Financial Statements</div><div class="cs1-card-s">Reading annual reports and balance sheets</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">🧠</div><div class="cs1-card-t">Investor Psychology</div><div class="cs1-card-s">FOMO, panic selling, market cycle emotions</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">🔄</div><div class="cs1-card-t">Portfolio Building</div><div class="cs1-card-s">Constructing and rebalancing your portfolio</div></div>
+          <div class="cs1-card"><div class="cs1-card-ico">🧾</div><div class="cs1-card-t">Tax on Investments</div><div class="cs1-card-s">STCG, LTCG, ELSS and tax-efficient planning</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       COURSE 02 — FOREX TRADING
+       Deep navy-blue. Data dashboard. Numbered list.
+       ══════════════════════════════════════════ -->
+  <div class="cs2 rev">
+    <div class="cs2-inner">
+      <div>
+        <div class="cs2-label">Course Two</div>
+        <div class="cs2-kicker">⚡ Basics to Advanced</div>
+        <h2 class="cs2-h">Forex Trading —<br>Basics to<br>Advanced</h2>
+        <p class="cs2-desc">Master the world's largest financial market — $7.5 trillion traded every single day. From currency pairs and pips to institutional-level Smart Money Concepts, with live sessions every week.</p>
+        <div class="cs2-stats">
+          <div class="cs2-stat"><div class="cs2-stat-v">$7.5T</div><div class="cs2-stat-l">Daily global forex volume — world's largest market</div></div>
+          <div class="cs2-stat"><div class="cs2-stat-v">24/5</div><div class="cs2-stat-l">Market hours — trade any time from India</div></div>
+          <div class="cs2-stat"><div class="cs2-stat-v">12</div><div class="cs2-stat-l">Modules from beginner to institutional level</div></div>
+          <div class="cs2-stat"><div class="cs2-stat-v">40h</div><div class="cs2-stat-l">Content + weekly live trading sessions</div></div>
+        </div>
+        <div class="cs2-cta">
+          <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20enquire%20about%20the%20Forex%20Trading%20course" class="cp-btn cp-btn-wa" target="_blank">💬 WhatsApp to Enquire</a>
+          <a href="tel:+918113849211" class="cp-btn cp-btn-ghost">📞 Call Us</a>
+        </div>
+      </div>
+      <div>
+        <div class="cs2-right-label">Full Curriculum</div>
+        <div class="cs2-list">
+          <div class="cs2-item"><div class="cs2-item-n">01</div><div class="cs2-item-t">Currency pairs, pips, lots, leverage & margin explained</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">02</div><div class="cs2-item-t">Technical analysis — charts, patterns, key indicators</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">03</div><div class="cs2-item-t">Fundamental analysis — NFP, CPI, central bank decisions</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">04</div><div class="cs2-item-t">Advanced price action trading strategies</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">05</div><div class="cs2-item-t">Smart Money Concepts (SMC) & ICT methodology</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">06</div><div class="cs2-item-t">MT5 platform — setup, tools, VPS, broker selection</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">07</div><div class="cs2-item-t">Risk management & position sizing rules</div></div>
+          <div class="cs2-item"><div class="cs2-item-n">08</div><div class="cs2-item-t">Emotional discipline for 24-hour forex markets</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       COURSE 03 — OPTIONS TRADING
+       Bold 50/50 vertical split. Pull quote. Magazine editorial.
+       ══════════════════════════════════════════ -->
+  <div class="cs3 rev">
+    <div class="cs3-bg-l"></div>
+    <div class="cs3-bg-r"></div>
+    <div class="cs3-inner">
+      <div class="cs3-left">
+        <div class="cs3-label">Course Three</div>
+        <div class="cs3-kicker">🎯 Mind Over Markets</div>
+        <h2 class="cs3-h">Option Trading —<br>Mind Over<br>Markets</h2>
+        <div class="cs3-pull">"Options are the most powerful instruments in the market — and the most dangerous for undisciplined minds."</div>
+        <p class="cs3-desc">This course teaches options mechanics AND the mental framework to trade them profitably. NIFTY, BANKNIFTY, weekly options — built specifically for Indian markets and expiry cycles.</p>
+        <div class="cs3-pills">
+          <div class="cs3-pill">📚 10 Modules</div>
+          <div class="cs3-pill">⏱ 35 Hours</div>
+          <div class="cs3-pill">📊 Live F&O Sessions</div>
+          <div class="cs3-pill">🏆 Certificate</div>
+        </div>
+        <div class="cs3-cta">
+          <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20enquire%20about%20the%20Options%20Trading%20course" class="cp-btn cp-btn-wa" target="_blank">💬 WhatsApp to Enquire</a>
+          <a href="tel:+918113849211" class="cp-btn cp-btn-dark">📞 Call Us</a>
+        </div>
+      </div>
+      <div class="cs3-right">
+        <div class="cs3-r-label">What You Will Learn</div>
+        <div class="cs3-mods">
+          <div class="cs3-mod"><div class="cs3-mod-ico">📐</div><div class="cs3-mod-t">Calls, puts, Greeks — Delta, Theta, Vega, Gamma</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">🇮🇳</div><div class="cs3-mod-t">NIFTY & BANKNIFTY F&O strategies — India focus</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">🔧</div><div class="cs3-mod-t">Spreads, straddles, strangles, iron condors</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">⚖️</div><div class="cs3-mod-t">Options buying vs selling — real risk-reward</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">📊</div><div class="cs3-mod-t">IV, options chain analysis, max pain & PCR</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">⛔</div><div class="cs3-mod-t">Emotion gate — knowing exactly when NOT to trade</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">📅</div><div class="cs3-mod-t">Expiry day strategies and risk management</div></div>
+          <div class="cs3-mod"><div class="cs3-mod-ico">📝</div><div class="cs3-mod-t">Live paper trading with emotion score tracking</div></div>
+        </div>
+        <div class="cs3-callout">
+          <div class="cs3-callout-t">⛔ The Emotion Gate for Options</div>
+          <div class="cs3-callout-d">A dedicated module on why options traders fail emotionally — and how to install a personal stop system that prevents all impulsive trades before they happen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       COURSE 04 — TRADING PSYCHOLOGY (FLAGSHIP)
+       Rich dark gold. Cinematic full-width. Signature.
+       ══════════════════════════════════════════ -->
+  <div class="cs4 rev">
+    <div class="cs4-inner">
+      <div class="cs4-topbar">
+        <div class="cs4-sig">⭐ Signature Course · Most Transformative</div>
+        <div class="cs4-coursenum">COURSE FOUR</div>
+      </div>
+      <div class="cs4-hero">
+        <div class="cs4-eyebrow">The Course That Transformed 8,500+ Traders</div>
+        <h2 class="cs4-h">Trading<br><span>Psychology</span></h2>
+        <p class="cs4-sub">Discover why 74% of traders fail — and exactly how to permanently eliminate the psychological patterns destroying your P&L. Includes 3 months of live TradeGuard system access.</p>
+      </div>
+      <div class="cs4-body">
+        <div>
+          <div class="cs4-col-h">What You Will Learn</div>
+          <div class="cs4-mods">
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Neuroscience of trading decisions & cognitive biases</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Revenge trading, overconfidence, fear, FOMO — root causes</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Building your personal emotion scoring system</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Trade journaling & post-session analysis framework</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Pattern breaking — stopping bad habits permanently</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Designing personal risk rules & stop-loss discipline</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Live TradeGuard emotion gate — 3 months included</div></div>
+            <div class="cs4-mod"><div class="cs4-mod-dot"></div><div class="cs4-mod-t">Weekly group psychology review sessions with mentor</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="cs4-col-h">What's Included</div>
+          <div class="cs4-perks">
+            <div class="cs4-perk"><div class="cs4-perk-ico">🧬</div><div><div class="cs4-perk-t">TradeGuard System — 3 Months Free</div><div class="cs4-perk-d">Proprietary emotion gate that monitors your state and blocks impulsive orders. Worth ₹15,000 — included free.</div></div></div>
+            <div class="cs4-perk"><div class="cs4-perk-ico">📱</div><div><div class="cs4-perk-t">Direct WhatsApp to Henrik Halberg</div><div class="cs4-perk-d">Founder-level mentor access for the full course duration — no intermediaries.</div></div></div>
+            <div class="cs4-perk"><div class="cs4-perk-ico">📓</div><div><div class="cs4-perk-t">Proprietary Trade Journal Template</div><div class="cs4-perk-d">Built for psychology tracking — emotion rating, bias logging, weekly improvement scoring.</div></div></div>
+            <div class="cs4-perk"><div class="cs4-perk-ico">🔄</div><div><div class="cs4-perk-t">Lifetime Access & Quarterly Updates</div><div class="cs4-perk-d">Course updated every quarter with new insights. Your access never expires.</div></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs4-bar">
+        <div>
+          <div class="cs4-bar-t">Ready to master your mind?</div>
+          <div class="cs4-bar-s">14 Modules · 50 Hours · Lifetime Access · Certificate</div>
+          <div class="cs4-chips">
+            <div class="cs4-chip">📚 14 Modules</div>
+            <div class="cs4-chip">⏱ 50 Hours</div>
+            <div class="cs4-chip">🔄 Lifetime Access</div>
+            <div class="cs4-chip">🏆 Certificate</div>
+          </div>
+        </div>
+        <div class="cs4-bar-cta">
+          <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20enquire%20about%20the%20Trading%20Psychology%20course" class="cp-btn cp-btn-wa" target="_blank">💬 WhatsApp to Enquire</a>
+          <a href="tel:+918113849211" class="cp-btn cp-btn-gold">📞 Call Us</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bundle strip -->
+  <!--<div class="cs-bundle">
+    <div class="cs-bundle-inner">
+      <div>
+        <div class="cs-bundle-t">🎓 All 4 Courses Bundle — Best Value</div>
+        <div class="cs-bundle-s">Complete education · 6 months TradeGuard · 1-on-1 mentorship · Priority WhatsApp support</div>
+      </div>
+      <div class="cs-bundle-btns">
+        <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20enquire%20about%20the%20All%204%20Courses%20Bundle" class="cp-btn cp-btn-wa" target="_blank">💬 WhatsApp for Bundle</a>
+        <a href="tel:+918113849211" class="cp-btn cp-btn-gold">📞 Call to Enquire</a>
+      </div>
+    </div>
+  </div>-->
+
+</div><!-- /courses -->
+
+<!-- ══ TESTIMONIALS SLIDER ══ -->
+<section class="slider-section" id="testimonials">
+  <div class="slider-hdr">
+    <div class="rev">
+      <div class="s-tag">Student Stories</div>
+      <div class="s-title">Real Results. Real Traders.</div>
+    </div>
+    <div class="slider-controls">
+      <button class="sl-btn" id="prev-btn" onclick="slideMove(-1)">←</button>
+      <button class="sl-btn" id="next-btn" onclick="slideMove(1)">→</button>
+    </div>
+  </div>
+  <div class="slider-track-wrap">
+    <div class="slider-track" id="slider">
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"The Trading Psychology course changed everything. My win rate went from 38% to 64% in 3 months. I stopped revenge trading entirely."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#0a0e17,#1a3f6b)">R</div><div><div class="tc-name">Rajesh Mehta</div><div class="tc-role">Options Trader, Mumbai</div><div class="tc-course">Trading Psychology</div></div></div></div></div>
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"I joined the Forex course knowing nothing. 6 months later I'm consistently profitable on EUR/USD. The live sessions are worth everything."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#d4a843,#7a5a10)">P</div><div><div class="tc-name">Priya Sharma</div><div class="tc-role">Forex Trader, Bangalore</div><div class="tc-course">Forex Basics to Advanced</div></div></div></div></div>
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"Options — Mind Over Markets is the best F&O course in India. The emotion gate concept alone saved me from 4 terrible trades in week one."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#1a4a2a,#0a2a14)">A</div><div><div class="tc-name">Amit Verma</div><div class="tc-role">NIFTY F&O Trader, Delhi</div><div class="tc-course">Option Trading</div></div></div></div></div>
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"The Beginner to Investor course made me realise I had been doing everything wrong. In 6 months my SIP portfolio is up 18% and I understand every position."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#2a0a4a,#5a1a8a)">N</div><div><div class="tc-name">Neha Kapoor</div><div class="tc-role">New Investor, Pune</div><div class="tc-course">Beginner to Investor</div></div></div></div></div>
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"Henrik's weekly psychology reports showed me I was overtrading every Monday. Fixing that one pattern improved my monthly P&L by 22%."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#3a1a0a,#8a4010)">K</div><div><div class="tc-name">Karan Singh</div><div class="tc-role">Swing Trader, Hyderabad</div><div class="tc-course">Trading Psychology</div></div></div></div></div>
+      <div class="slide"><div class="tc"><div class="tc-stars">★★★★★</div><p class="tc-quote">"The WhatsApp mentor support is unlike anything else. I asked a question about a live forex trade at 11pm and got a detailed answer within 20 minutes."</p><div class="tc-author"><div class="tc-av" style="background:linear-gradient(135deg,#0a2a3a,#1a5a7a)">S</div><div><div class="tc-name">Sundar Rajan</div><div class="tc-role">Forex & Equity Trader, Chennai</div><div class="tc-course">Forex + Psychology Bundle</div></div></div></div></div>
+    </div>
+  </div>
+  <div class="slider-dots" id="slider-dots">
+    <div class="sdot active" onclick="slideTo(0)"></div>
+    <div class="sdot" onclick="slideTo(1)"></div>
+    <div class="sdot" onclick="slideTo(2)"></div>
+    <div class="sdot" onclick="slideTo(3)"></div>
+    <div class="sdot" onclick="slideTo(4)"></div>
+    <div class="sdot" onclick="slideTo(5)"></div>
+  </div>
+</section>
+
+<!-- ══ INSTRUCTORS ══ -->
+<section id="instructors" class="inst-section">
+  <div class="inst-hdr rev">
+    <div class="s-tag">Your Mentors</div>
+    <div class="s-title">Learn from Market Veterans</div>
+  </div>
+  <div class="inst-track">
+    <div class="ic rev"><div class="ic-av" style="background:linear-gradient(135deg,#0a0e17,#1a3f6b)">HJ</div><div class="ic-name">Henrik J. Halberg</div><div class="ic-role">Founder & Head Mentor</div><div class="ic-bio">20+ years in financial markets. Former VP at Morgan Stanley. CFA & MBA from IIM Ahmedabad. Pioneer of emotion-intelligent trading education in India.</div><div class="ic-tags"><span class="ict">Trading Psychology</span><span class="ict">Beginner to Investor</span></div></div>
+    <div class="ic rev"><div class="ic-av" style="background:linear-gradient(135deg,#d4a843,#7a5a10)">SR</div><div class="ic-name">Sunita Rao</div><div class="ic-role">Options & Derivatives Lead</div><div class="ic-bio">15+ years in equity derivatives. Ex-Senior Fund Manager at HDFC AMC. CFA charterholder. NIFTY and BANKNIFTY options specialist with a proprietary edge strategy.</div><div class="ic-tags"><span class="ict">Option Trading</span><span class="ict">Mind Over Markets</span></div></div>
+    <div class="ic rev"><div class="ic-av" style="background:linear-gradient(135deg,#1a4a2a,#0a2a14)">AK</div><div class="ic-name">Aditya Kumar</div><div class="ic-role">Forex & Technical Lead</div><div class="ic-bio">Forex trader and quant researcher. PhD in Finance, IIT Bombay. Specialises in price action, ICT concepts, and SMC. 12 years of live market experience.</div><div class="ic-tags"><span class="ict">Forex Basics to Advanced</span><span class="ict">Technical Analysis</span></div></div>
+  </div>
+</section>
+
+<!-- ══ FAQ ACCORDION ══ -->
+<section class="faq-section" id="faq">
+  <div class="faq-hdr rev">
+    <div class="s-tag">Questions</div>
+    <div class="s-title">Everything You Need to Know</div>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item open"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">Do I need prior trading experience to join any course?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">No. Our Beginner to Investor course starts from absolute zero. The other courses include foundational refresher modules too. Everyone from complete beginners to experienced traders finds value here.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">How are the classes conducted — online or offline?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">All courses are conducted online — a combination of live Zoom sessions and recorded video lessons. You can attend live from anywhere in the world and access recordings immediately after each session.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">What is the fee for each course?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">Please WhatsApp or call us for current pricing. We offer different fee structures and EMI options. We also provide bundle discounts for students enrolling in multiple courses.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">How long does each course take to complete?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">Beginner (24 hrs), Forex (40 hrs), Options (35 hrs), Psychology (50 hrs). With 2–3 sessions per week, completion takes 2–4 months. All sessions are recorded so you can catch up if you miss one.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">Will I get a certificate after completing the course?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">Yes. Every course comes with a Halberg Fin completion certificate on passing the final assessment. The Trading Psychology course includes a lifetime certificate shareable on LinkedIn.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">What is the TradeGuard system mentioned in the Psychology course?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">TradeGuard is our proprietary emotional trading control platform. It monitors your emotional state through check-ins and trade patterns, and automatically blocks impulsive orders when your emotion score is too high. Psychology course students get 3 months free access — worth ₹15,000.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">Can I join if I'm an experienced trader who is struggling with consistency?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">Absolutely — in fact this is our most common student profile. Experienced traders who are technically sound but emotionally inconsistent find our Trading Psychology course the most transformative. The emotion gate system alone changes everything.</div></div></div>
+    <div class="faq-item"><div class="faq-q" onclick="toggleFaq(this)"><div class="faq-q-text">How do I contact my mentor directly?</div><div class="faq-arrow">+</div></div><div class="faq-a"><div class="faq-a-inner">Every enrolled student is added to a private WhatsApp group with their course mentor. You can ask questions, share live trades, and get real-time feedback directly. No bots, no waiting, no support tickets.</div></div></div>
+  </div>
+</section>
+
+<!-- ══ CTA ══ -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <div class="cta-inner">
+    <div class="s-tag">Start Your Journey</div>
+    <div class="s-title">Ready to Become a Consistent, Disciplined Trader?</div>
+    <p class="cta-desc">Join 8,500+ students who transformed their trading with Halberg Fin. WhatsApp or call us — we'll guide you to the right course for your level.</p>
+    <div class="cta-btns">
+      <a href="https://wa.me/918113849211?text=Hi%2C%20I%20want%20to%20know%20more%20about%20Halberg%20Fin%20courses" class="hbtn hbtn-wa" target="_blank">💬 WhatsApp Us Now</a>
+      <a href="tel:+918113849211" class="hbtn hbtn-main">📞 Call +91 98765 43210</a>
+      <a href="#courses" class="hbtn hbtn-ghost">🎓 Browse Courses</a>
+    </div>
+    <div class="cta-cards">
+      <div class="cta-card rev"><div class="cta-card-ico">💬</div><div class="cta-card-title">Free Demo Class</div><div class="cta-card-sub">WhatsApp us and get a free live session link within the hour</div></div>
+      <div class="cta-card rev"><div class="cta-card-ico">📞</div><div class="cta-card-title">Counselling Call</div><div class="cta-card-sub">Talk to a mentor, find the right course for your current level</div></div>
+      <div class="cta-card rev"><div class="cta-card-ico">🎓</div><div class="cta-card-title">All 4 Bundle</div><div class="cta-card-sub">Best value — full education + 6 months TradeGuard access</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CONTACT ══ -->
+<section id="contact">
+  <div class="contact-grid">
+    <div class="rev-l">
+      <div class="s-tag">Get In Touch</div>
+      <div class="s-title">We'll Help You Choose the Right Course</div>
+      <p class="s-sub">Not sure which course is right for you? Talk to our mentors. We'll assess your level and recommend the perfect starting point — no pressure.</p>
+      <div class="contact-methods">
+        <a href="https://wa.me/918113849211?text=Hi%20Halberg%20Fin%2C%20I%20want%20to%20enquire%20about%20your%20courses" class="cm" target="_blank">
+          <div class="cm-ico wa">💬</div>
+          <div><div class="cm-label">WhatsApp — Fastest Response</div><div class="cm-val">+91 81138 49211</div></div>
+          <div class="cm-arrow">→</div>
+        </a>
+        <a href="tel:+918113849211" class="cm">
+          <div class="cm-ico ph">📞</div>
+          <div><div class="cm-label">Call — Mon to Sat · 9AM to 7PM</div><div class="cm-val">+91 81138 49211</div></div>
+          <div class="cm-arrow">→</div>
+        </a>
+        <a href="mailto:courses@halbergfin.com" class="cm">
+          <div class="cm-ico em">✉️</div>
+          <div><div class="cm-label">Email — Reply within 24 hours</div><div class="cm-val">courses@halbergfin.com</div></div>
+          <div class="cm-arrow">→</div>
+        </a>
+      </div>
+    </div>
+    <div class="rev-r">
+      <div class="cf-wrap">
+        <div class="cf-title">Request a Free Demo Class</div>
+        <div class="frow">
+          <div class="fg"><label>First Name</label><input id="f-fname" type="text" placeholder="Rajesh"/></div>
+          <div class="fg"><label>Last Name</label><input id="f-lname" type="text" placeholder="Mehta"/></div>
+        </div>
+        <div class="fg"><label>Email Address</label><input id="f-email" type="email" placeholder="rajesh@gmail.com"/></div>
+        <div class="fg"><label>WhatsApp Number</label><input id="f-wa" type="tel" placeholder="+91 98765 43210"/></div>
+        <div class="fg"><label>Course Interest</label>
+          <select id="f-course">
+            <option value="">Select a course</option>
+            <option>Beginner to Investor</option>
+            <option>Forex Trading — Basics to Advanced</option>
+            <option>Option Trading — Mind Over Markets</option>
+            <option>Trading Psychology</option>
+            <option>All 4 Courses Bundle</option>
+          </select>
+        </div>
+        <div class="fg"><label>Your Trading Experience</label>
+          <select id="f-exp">
+            <option value="">Select your level</option>
+            <option>Complete Beginner — Never traded before</option>
+            <option>Beginner — Less than 1 year</option>
+            <option>Intermediate — 1 to 3 years</option>
+            <option>Experienced — 3+ years but struggling</option>
+            <option>Advanced — Want to improve psychology</option>
+          </select>
+        </div>
+        <div class="fg"><label>Message (Optional)</label>
+          <textarea id="f-msg" placeholder="Tell us what you're struggling with, or what you want to achieve..."></textarea>
+        </div>
+        <div id="f-error" style="display:none;color:#e74c3c;font-size:12px;margin-bottom:10px;padding:10px 14px;background:rgba(231,76,60,.08);border-radius:8px;border:1px solid rgba(231,76,60,.2)"></div>
+        <button class="f-sub" id="f-btn" onclick="submitForm(this)">📩 Request Free Demo Class</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="fg-grid">
+    <div>
+      <div style="margin-bottom:4px">
+        <img src="/images/logo.png" alt="Halberg Fin" style="height:32px;width:auto;filter:brightness(0) invert(1);opacity:0.85;"/>
+      </div>
+      <div class="fb-tag">Trading Education · Est. 2010</div>
+      <p class="fb-desc">India's premier emotion-intelligent trading education platform. Teaching traders not just how to trade — but how to trade with discipline, clarity, and consistent profitability.</p>
+      <div class="fb-socs">
+        <a href="#" class="fsoc">𝕏</a>
+        <a href="#" class="fsoc">in</a>
+        <a href="https://wa.me/918113849211" class="fsoc" target="_blank">💬</a>
+        <a href="#" class="fsoc">▶</a>
+      </div>
+    </div>
+    <div>
+      <div class="fc-ttl">Courses</div>
+      <ul class="fc-links">
+        <li><a href="#courses">Beginner to Investor</a></li>
+        <li><a href="#courses">Forex Basics to Advanced</a></li>
+        <li><a href="#courses">Option Trading</a></li>
+        <li><a href="#courses">Trading Psychology</a></li>
+        <li><a href="#courses">All 4 Bundle</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="fc-ttl">Company</div>
+      <ul class="fc-links">
+        <li><a href="#about">About Us</a></li>
+        <li><a href="#instructors">Our Mentors</a></li>
+        <li><a href="#testimonials">Student Stories</a></li>
+        <li><a href="#faq">FAQs</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="fc-ttl">Contact</div>
+      <ul class="fc-links">
+        <li><a href="https://wa.me/918113849211" target="_blank">💬 WhatsApp</a></li>
+        <li><a href="tel:+918113849211">📞 +91 81138 49211</a></li>
+        <li><a href="mailto:courses@halbergfin.com">✉️ courses@halbergfin.com</a></li>
+        <li><a href="#">📍 Mumbai, India</a></li>
+        <li><a href="#">🕐 Mon–Sat · 9AM–7PM</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bot">
+    <div class="f-copy">© 2025 Halberg Fin Trading Education · SEBI Reg. No. INA000012345 · All rights reserved.</div>
+    <div class="f-leg"><a href="#">Privacy Policy</a><a href="#">Terms</a><a href="#">Refund Policy</a><a href="#">Disclaimer</a></div>
+  </div>
+</footer>
 
 <script>
-// ── CONFIG ──
-const ADMIN_PASSWORD = 'halberg2025'; // change this
-const SUPABASE_URL   = 'https://efbqkoohmzjkguilbjlc.supabase.co';
-const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnFrb29obXpqa2d1aWxiamxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDI5MTYsImV4cCI6MjA5MzYxODkxNn0.Cc4SBA-1vJo_if3Tf6WjavBsiMLl7CpyGl8e1hgBweU';
-const PER_PAGE = 20;
-let allLeads = [];
-let page = 1;
+// ── NAV SCROLL ──────────────────────────────────────────────────
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('scrolled',scrollY>60));
 
-// ── AUTH ──
-function doLogin() {
-  const val = document.getElementById('pwd').value;
-  if (val === ADMIN_PASSWORD) {
-    sessionStorage.setItem('hf_admin', '1');
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    loadData();
-  } else {
-    document.getElementById('login-err').style.display = 'block';
-    setTimeout(() => document.getElementById('login-err').style.display = 'none', 2500);
-  }
-}
-
-function logout() {
-  sessionStorage.removeItem('hf_admin');
-  location.reload();
-}
-
-// Check session
-if (sessionStorage.getItem('hf_admin')) {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  loadData();
-}
-
-// ── LOAD DATA ──
-async function loadData() {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/enquiries?select=*&order=created_at.desc`, {
-      headers: {
-        'apikey': SUPABASE_ANON,
-        'Authorization': `Bearer ${SUPABASE_ANON}`
-      }
-    });
-    if (!res.ok) throw new Error('Fetch failed');
-    allLeads = await res.json();
-    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN');
-    updateStats();
-    renderTable();
-  } catch(e) {
-    console.error(e);
-    document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--red)">⚠ Failed to load data. Check Supabase anon key.</td></tr>`;
-  }
-}
-
-// ── STATS ──
-function updateStats() {
-  const total = allLeads.length;
-  const now   = new Date();
-  const today = allLeads.filter(l => new Date(l.created_at).toDateString() === now.toDateString()).length;
-  const weekAgo = new Date(now - 7*86400000);
-  const week  = allLeads.filter(l => new Date(l.created_at) >= weekAgo).length;
-
-  // top course
-  const courseCounts = {};
-  allLeads.forEach(l => { if(l.course_interest) courseCounts[l.course_interest] = (courseCounts[l.course_interest]||0)+1; });
-  const topCourse = Object.entries(courseCounts).sort((a,b)=>b[1]-a[1])[0];
-
-  document.getElementById('s-total').textContent = total;
-  document.getElementById('s-today').textContent = today;
-  document.getElementById('s-week').textContent  = week;
-  document.getElementById('s-top').textContent   = topCourse ? topCourse[1] : '—';
-  document.getElementById('dash-sub').textContent = `${total} total enquiries · Last refreshed ${new Date().toLocaleTimeString('en-IN')}`;
-
-  // Course breakdown
-  const sorted = Object.entries(courseCounts).sort((a,b)=>b[1]-a[1]);
-  const max = sorted[0]?.[1] || 1;
-  document.getElementById('course-breakdown').innerHTML = sorted.length ? sorted.map(([name,count])=>`
-    <div class="course-row">
-      <div class="course-name" title="${name}">${name}</div>
-      <div class="course-bar-wrap"><div class="course-bar" style="width:${Math.round(count/max*100)}%"></div></div>
-      <div class="course-count">${count}</div>
-    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">No data yet</div>';
-
-  // Date breakdown — last 7 days
-  const days = [];
-  for(let i=6;i>=0;i--){
-    const d = new Date(now - i*86400000);
-    const label = d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
-    const count = allLeads.filter(l=>new Date(l.created_at).toDateString()===d.toDateString()).length;
-    days.push({label,count});
-  }
-  document.getElementById('date-breakdown').innerHTML = days.map(({label,count})=>`
-    <div class="date-row">
-      <span class="date-label">${label}</span>
-      <span class="date-count">${count || '—'}</span>
-    </div>`).join('');
-}
-
-// ── TABLE ──
-function filtered() {
-  const q = document.getElementById('search').value.toLowerCase();
-  const course = document.getElementById('filter-course').value;
-  return allLeads.filter(l => {
-    const matchQ = !q || [l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message]
-      .some(v => v && v.toLowerCase().includes(q));
-    const matchC = !course || l.course_interest === course;
-    return matchQ && matchC;
+// ── SMOOTH SCROLL ───────────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth',block:'start'});}
   });
+});
+
+// ── SCROLL REVEAL ───────────────────────────────────────────────
+const obs=new IntersectionObserver((entries)=>{
+  entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('vis'),i*90);});
+},{threshold:.1});
+document.querySelectorAll('.rev,.rev-l,.rev-r').forEach(el=>obs.observe(el));
+
+// ── ANIMATED COUNTERS ───────────────────────────────────────────
+const countObs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting && !e.target.dataset.done){
+      e.target.dataset.done=1;
+      const target=+e.target.dataset.target;
+      const suffix=e.target.nextElementSibling?.classList.contains('ctr-suffix')
+        ? e.target.nextElementSibling.textContent : '';
+      let start=0;
+      const dur=2000;
+      const step=target/(dur/16);
+      const timer=setInterval(()=>{
+        start=Math.min(start+step,target);
+        e.target.textContent=Math.floor(start).toLocaleString();
+        if(start>=target){clearInterval(timer);e.target.textContent=target.toLocaleString();}
+      },16);
+    }
+  });
+},{threshold:.5});
+document.querySelectorAll('.count').forEach(el=>countObs.observe(el));
+
+// ── COURSES: no tabs — all 4 open ────────────────────────────
+
+// ── TESTIMONIAL SLIDER ──────────────────────────────────────────
+let slideIdx=0;
+const slides=document.querySelectorAll('.slide');
+const dots=document.querySelectorAll('.sdot');
+const slideWidth=380; // card width + gap
+
+function slideTo(idx){
+  slideIdx=Math.max(0,Math.min(idx,slides.length-1));
+  document.getElementById('slider').style.transform=`translateX(-${slideIdx*slideWidth}px)`;
+  dots.forEach((d,i)=>d.classList.toggle('active',i===slideIdx));
 }
 
-function renderTable() {
-  const leads = filtered();
-  const total = leads.length;
-  const pages = Math.ceil(total / PER_PAGE) || 1;
-  page = Math.min(page, pages);
-  const slice = leads.slice((page-1)*PER_PAGE, page*PER_PAGE);
+function slideMove(dir){
+  slideTo(slideIdx+dir);
+}
 
-  document.getElementById('leads-count').textContent = `${total} lead${total!==1?'s':''}`;
+// Auto-slide
+setInterval(()=>slideTo((slideIdx+1)%slides.length),5000);
 
-  if (!slice.length) {
-    document.getElementById('leads-tbody').innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-ico">📭</div><div>No leads found</div></div></td></tr>`;
-    document.getElementById('page-info').textContent = '';
-    document.getElementById('page-btns').innerHTML = '';
-    return;
+// ── FAQ ACCORDION ───────────────────────────────────────────────
+function toggleFaq(el){
+  const item=el.parentElement;
+  const isOpen=item.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  // Open clicked (unless it was already open)
+  if(!isOpen) item.classList.add('open');
+}
+
+// ── FORM SUBMIT ─────────────────────────────────────────────────
+async function submitForm(btn) {
+  const fname = document.getElementById('f-fname').value.trim();
+  const lname = document.getElementById('f-lname').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const wa    = document.getElementById('f-wa').value.trim();
+  const course= document.getElementById('f-course').value;
+  const exp   = document.getElementById('f-exp').value;
+  const msg   = document.getElementById('f-msg').value.trim();
+  const errEl = document.getElementById('f-error');
+
+  errEl.style.display = 'none';
+  if (!fname) { errEl.textContent='Please enter your first name.'; errEl.style.display='block'; return; }
+  if (!wa)    { errEl.textContent='Please enter your WhatsApp number.'; errEl.style.display='block'; return; }
+
+  btn.textContent = '⏳ Submitting...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/enquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name:fname, last_name:lname, email, whatsapp:wa, course_interest:course, experience:exp, message:msg })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Submission failed');
+
+    btn.textContent = '✓ Sent! Redirecting to WhatsApp...';
+    btn.style.background = '#25d366';
+    btn.style.color = 'white';
+
+    setTimeout(() => {
+      window.open(data.waUrl, '_blank');
+      btn.textContent = "✓ Submitted! We'll WhatsApp you shortly.";
+    }, 1500);
+
+  } catch(err) {
+    btn.textContent = '📩 Request Free Demo Class';
+    btn.disabled = false;
+    errEl.textContent = 'Something went wrong. Please try WhatsApp directly or try again.';
+    errEl.style.display = 'block';
+    console.error(err);
   }
-
-  document.getElementById('leads-tbody').innerHTML = slice.map((l,i) => {
-    const num = (page-1)*PER_PAGE + i + 1;
-    const date = new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
-    const waNum = (l.whatsapp||'').replace(/\D/g,'');
-    const waLink = `https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up on your Halberg Fin enquiry about ${l.course_interest||'our courses'}. When would be a good time to connect?`)}`;
-    const mailLink = l.email ? `mailto:${l.email}?subject=Your Halberg Fin Enquiry — ${l.course_interest||'Course'}&body=Hi ${l.first_name},%0D%0A%0D%0AThank you for your interest in ${l.course_interest||'our courses'}.` : '';
-    return `<tr>
-      <td style="color:var(--muted);font-size:11px">${num}</td>
-      <td><div class="td-name">${l.first_name||''} ${l.last_name||''}</div></td>
-      <td><div class="td-wa">${l.whatsapp||'—'}</div></td>
-      <td><div class="td-email">${l.email||'—'}</div></td>
-      <td><span class="td-course">${l.course_interest||'—'}</span></td>
-      <td><div class="td-exp">${(l.experience||'—').split('—')[0].trim()}</div></td>
-      <td><div class="td-msg" title="${l.message||''}">${l.message||'—'}</div></td>
-      <td><div class="td-date">${date}</div></td>
-      <td><div class="td-actions">
-        <a class="act-btn act-wa" href="${waLink}" target="_blank">💬 WA</a>
-        ${l.email ? `<a class="act-btn act-mail" href="${mailLink}">✉ Mail</a>` : ''}
-      </div></td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('page-info').textContent = `Page ${page} of ${pages} · Showing ${slice.length} of ${total}`;
-
-  // Page buttons
-  const btns = [];
-  btns.push(`<button class="page-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹</button>`);
-  for(let p=1;p<=pages;p++) {
-    if(pages<=7||p===1||p===pages||Math.abs(p-page)<=1)
-      btns.push(`<button class="page-btn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`);
-    else if(Math.abs(p-page)===2)
-      btns.push(`<span style="color:var(--muted);padding:0 4px">…</span>`);
-  }
-  btns.push(`<button class="page-btn" onclick="goPage(${page+1})" ${page>=pages?'disabled':''}>›</button>`);
-  document.getElementById('page-btns').innerHTML = btns.join('');
 }
 
-function goPage(p) { page = p; renderTable(); window.scrollTo({top:0,behavior:'smooth'}); }
-
-// ── EXPORT CSV ──
-function exportCSV() {
-  const leads = filtered();
-  const headers = ['#','First Name','Last Name','Email','WhatsApp','Course','Experience','Message','Date'];
-  const rows = leads.map((l,i) => [
-    i+1,
-    l.first_name||'',
-    l.last_name||'',
-    l.email||'',
-    l.whatsapp||'',
-    l.course_interest||'',
-    l.experience||'',
-    (l.message||'').replace(/,/g,' '),
-    new Date(l.created_at).toLocaleString('en-IN')
-  ]);
-  const csv = [headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = `halbergfin-leads-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-}
+// ── HERO STACK CARD HOVER ───────────────────────────────────────
+document.querySelectorAll('.stack-card').forEach((card,i)=>{
+  card.addEventListener('mouseenter',()=>{card.style.transform='translateY(-8px) rotate(1deg)';});
+  card.addEventListener('mouseleave',()=>{
+    const transforms=['rotate(-4deg)','rotate(-1deg)',''];
+    card.style.transform=transforms[i]||'';
+  });
+});
 </script>
 </body>
 </html>
