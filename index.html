@@ -706,6 +706,8 @@ section{padding:110px 5%}
 .fg input,.fg select,.fg textarea{background:rgba(255,255,255,.05);border:1px solid rgba(212,168,67,.14);border-radius:9px;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;transition:border-color .25s;resize:none;width:100%}
 .fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.2)}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:rgba(212,168,67,.45)}
+.fg input.err,.fg select.err,.fg textarea.err{border-color:#e74c3c;box-shadow:0 0 0 3px rgba(231,76,60,.14)}
+.fg label .req{color:#e74c3c;margin-left:3px}
 .fg select{cursor:pointer}.fg select option{background:var(--ink);color:white}
 .fg textarea{height:80px}
 .f-sub{width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;font-family:'Satoshi',sans-serif;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;transition:all .3s;position:relative;z-index:1;letter-spacing:.3px}
@@ -1315,13 +1317,13 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
       <div class="cf-wrap">
         <div class="cf-title">Request a Free Demo Class</div>
         <div class="frow">
-          <div class="fg"><label>First Name</label><input id="f-fname" type="text" placeholder="Rajesh"/></div>
-          <div class="fg"><label>Last Name</label><input id="f-lname" type="text" placeholder="Mehta"/></div>
+          <div class="fg"><label>First Name<span class="req">*</span></label><input id="f-fname" type="text" placeholder="Rajesh" required autocomplete="given-name"/></div>
+          <div class="fg"><label>Last Name</label><input id="f-lname" type="text" placeholder="Mehta" autocomplete="family-name"/></div>
         </div>
-        <div class="fg"><label>Email Address</label><input id="f-email" type="email" placeholder="rajesh@gmail.com"/></div>
-        <div class="fg"><label>WhatsApp Number</label><input id="f-wa" type="tel" placeholder="+91 98765 43210"/></div>
-        <div class="fg"><label>Course Interest</label>
-          <select id="f-course">
+        <div class="fg"><label>Email Address<span class="req">*</span></label><input id="f-email" type="email" placeholder="rajesh@gmail.com" required autocomplete="email" inputmode="email"/></div>
+        <div class="fg"><label>WhatsApp Number<span class="req">*</span></label><input id="f-wa" type="tel" placeholder="+91 98765 43210" required autocomplete="tel" inputmode="tel"/></div>
+        <div class="fg"><label>Course Interest<span class="req">*</span></label>
+          <select id="f-course" required>
             <option value="">Select a course</option>
             <option>Beginner to Investor</option>
             <option>Forex Trading — Basics to Advanced</option>
@@ -1330,8 +1332,8 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
             <option>All 4 Courses Bundle</option>
           </select>
         </div>
-        <div class="fg"><label>Your Trading Experience</label>
-          <select id="f-exp">
+        <div class="fg"><label>Your Trading Experience<span class="req">*</span></label>
+          <select id="f-exp" required>
             <option value="">Select your level</option>
             <option>Complete Beginner — Never traded before</option>
             <option>Beginner — Less than 1 year</option>
@@ -1475,19 +1477,76 @@ function toggleFaq(el){
 }
 
 // ── FORM SUBMIT ─────────────────────────────────────────────────
-async function submitForm(btn) {
-  const fname = document.getElementById('f-fname').value.trim();
-  const lname = document.getElementById('f-lname').value.trim();
-  const email = document.getElementById('f-email').value.trim();
-  const wa    = document.getElementById('f-wa').value.trim();
-  const course= document.getElementById('f-course').value;
-  const exp   = document.getElementById('f-exp').value;
-  const msg   = document.getElementById('f-msg').value.trim();
-  const errEl = document.getElementById('f-error');
+// ── FORM VALIDATION HELPERS ───────────────────────────────────
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+const WA_DIGITS_MIN = 8, WA_DIGITS_MAX = 15;
 
-  errEl.style.display = 'none';
-  if (!fname) { errEl.textContent='Please enter your first name.'; errEl.style.display='block'; return; }
-  if (!wa)    { errEl.textContent='Please enter your WhatsApp number.'; errEl.style.display='block'; return; }
+function _formFields() {
+  return {
+    fname:  document.getElementById('f-fname'),
+    lname:  document.getElementById('f-lname'),
+    email:  document.getElementById('f-email'),
+    wa:     document.getElementById('f-wa'),
+    course: document.getElementById('f-course'),
+    exp:    document.getElementById('f-exp'),
+    msg:    document.getElementById('f-msg'),
+  };
+}
+function _clearFormErrors() {
+  const errEl = document.getElementById('f-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  Object.values(_formFields()).forEach(el => el && el.classList.remove('err'));
+}
+function _showFieldError(field, message) {
+  const errEl = document.getElementById('f-error');
+  errEl.textContent = message;
+  errEl.style.display = 'block';
+  if (field) {
+    field.classList.add('err');
+    try { field.focus({ preventScroll: true }); } catch(e) { field.focus(); }
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+// Auto-clear field error when user starts fixing it
+document.addEventListener('DOMContentLoaded', () => {
+  Object.values(_formFields()).forEach(el => {
+    if (!el) return;
+    const clear = () => { el.classList.remove('err'); };
+    el.addEventListener('input', clear);
+    el.addEventListener('change', clear);
+  });
+});
+
+async function submitForm(btn) {
+  const f = _formFields();
+  const fname  = f.fname.value.trim();
+  const lname  = f.lname.value.trim();
+  const email  = f.email.value.trim();
+  const wa     = f.wa.value.trim();
+  const course = f.course.value;
+  const exp    = f.exp.value;
+  const msg    = f.msg.value.trim();
+
+  _clearFormErrors();
+
+  if (!fname)  return _showFieldError(f.fname, 'Please enter your first name.');
+
+  // Email — required + format
+  if (!email)  return _showFieldError(f.email, 'Please enter your email address.');
+  if (!EMAIL_RE.test(email))
+                return _showFieldError(f.email, 'Please enter a valid email address (e.g. name@example.com).');
+
+  // WhatsApp — required + 8-15 digits (allows + spaces dashes)
+  if (!wa)     return _showFieldError(f.wa, 'Please enter your WhatsApp number.');
+  const waDigits = wa.replace(/\D/g, '');
+  if (waDigits.length < WA_DIGITS_MIN || waDigits.length > WA_DIGITS_MAX)
+                return _showFieldError(f.wa, 'Please enter a valid WhatsApp number (8–15 digits, country code optional).');
+
+  // Course interest — required
+  if (!course) return _showFieldError(f.course, 'Please select the course you are interested in.');
+
+  // Trading experience — required
+  if (!exp)    return _showFieldError(f.exp, 'Please tell us your trading experience level.');
 
   btn.textContent = '⏳ Submitting...';
   btn.disabled = true;
