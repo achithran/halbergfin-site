@@ -66,6 +66,8 @@ nav.scrolled{
 }
 .nav-logo{display:flex;align-items:center;gap:11px;text-decoration:none}
 .logo-mark{width:38px;height:38px;flex-shrink:0}
+.logo-img{height:46px;width:auto;display:block;transition:opacity .25s}
+.logo-img:hover{opacity:.85}
 .logo-text .n1{font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--gold2);letter-spacing:1px;line-height:1}
 .logo-text .n2{font-size:8px;color:rgba(212,168,67,.55);letter-spacing:3px;text-transform:uppercase;margin-top:1px}
 .nav-links{display:flex;gap:28px;list-style:none;margin:0 auto}
@@ -784,17 +786,16 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
 <!-- ══ NAV ══ -->
 <nav id="nav">
   <a href="#home" class="nav-logo">
-    <svg class="logo-mark" viewBox="0 0 42 42" fill="none">
-      <circle cx="21" cy="21" r="19" stroke="rgba(212,168,67,.35)" stroke-width="2" fill="none"/>
-      <path d="M21 5C13 5 7 12 7 21" stroke="rgba(212,168,67,.5)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      <path d="M21 37C29 37 35 30 35 21" stroke="rgba(212,168,67,.5)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-      <polyline points="14,17 21,9 28,17" stroke="#d4a843" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      <polyline points="14,25 21,33 28,25" stroke="#d4a843" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <!-- Inline brand mark + wordmark. To swap to the raster file: replace this <svg>...</svg> block with <img src="logo.png" alt="Halberg Fin — Trading & Finance" class="logo-img"/> and re-add `filter:brightness(0) invert(1)` to .logo-img -->
+    <svg class="logo-img" viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" aria-label="Halberg Fin — Trading & Finance">
+      <g transform="translate(8,10)">
+        <path d="M100 0 A100 100 0 0 0 100 200 L100 152 A52 52 0 0 1 100 48 Z" fill="#faf6ed"/>
+        <path d="M100 0 A100 100 0 0 1 100 200 L100 152 A52 52 0 0 0 100 48 Z" fill="#2dc83a"/>
+        <rect x="92" y="40" width="16" height="120" fill="#faf6ed"/>
+      </g>
+      <text x="240" y="125" font-family="'Bebas Neue','Impact',sans-serif" font-size="108" fill="#faf6ed" letter-spacing="2">HALBERG FIN</text>
+      <text x="244" y="180" font-family="'Satoshi','Inter',system-ui,sans-serif" font-size="22" font-weight="600" letter-spacing="9" fill="#2dc83a">TRADING &amp; FINANCE</text>
     </svg>
-    <div class="logo-text">
-      <div class="n1">HALBERG FIN</div>
-      <div class="n2">Trading Education</div>
-    </div>
   </a>
   <ul class="nav-links">
     <li><a href="#vision">Vision</a></li>
