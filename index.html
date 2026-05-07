@@ -1314,7 +1314,7 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
       </div>
     </div>
     <div class="rev-r">
-      <div class="cf-wrap">
+      <form class="cf-wrap" id="enq-form" novalidate>
         <div class="cf-title">Request a Free Demo Class</div>
         <div class="frow">
           <div class="fg"><label>First Name<span class="req">*</span></label><input id="f-fname" type="text" placeholder="Rajesh" required autocomplete="given-name"/></div>
@@ -1346,8 +1346,8 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
           <textarea id="f-msg" placeholder="Tell us what you're struggling with, or what you want to achieve..."></textarea>
         </div>
         <div id="f-error" style="display:none;color:#e74c3c;font-size:12px;margin-bottom:10px;padding:10px 14px;background:rgba(231,76,60,.08);border-radius:8px;border:1px solid rgba(231,76,60,.2)"></div>
-        <button class="f-sub" id="f-btn" onclick="submitForm(this)">📩 Request Free Demo Class</button>
-      </div>
+        <button class="f-sub" id="f-btn" type="submit">📩 Request Free Demo Class</button>
+      </form>
     </div>
   </div>
 </section>
@@ -1507,14 +1507,22 @@ function _showFieldError(field, message) {
     field.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
-// Auto-clear field error when user starts fixing it
+// Wire up the form: submit handler + auto-clear errors on user input
 document.addEventListener('DOMContentLoaded', () => {
-  Object.values(_formFields()).forEach(el => {
+  const fields = _formFields();
+  Object.values(fields).forEach(el => {
     if (!el) return;
     const clear = () => { el.classList.remove('err'); };
     el.addEventListener('input', clear);
     el.addEventListener('change', clear);
   });
+  const form = document.getElementById('enq-form');
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitForm(document.getElementById('f-btn'));
+    });
+  }
 });
 
 async function submitForm(btn) {
@@ -1526,8 +1534,11 @@ async function submitForm(btn) {
   const course = f.course.value;
   const exp    = f.exp.value;
   const msg    = f.msg.value.trim();
+  const errEl  = document.getElementById('f-error');
 
   _clearFormErrors();
+
+  console.log('[validation] running', { fname, email, wa, course, exp });
 
   if (!fname)  return _showFieldError(f.fname, 'Please enter your first name.');
 
@@ -1542,7 +1553,7 @@ async function submitForm(btn) {
   if (waDigits.length < WA_DIGITS_MIN || waDigits.length > WA_DIGITS_MAX)
                 return _showFieldError(f.wa, 'Please enter a valid WhatsApp number (8–15 digits, country code optional).');
 
-  // Course interest — required
+  // Course interest — required (empty option value is "")
   if (!course) return _showFieldError(f.course, 'Please select the course you are interested in.');
 
   // Trading experience — required
