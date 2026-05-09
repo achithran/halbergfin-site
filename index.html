@@ -1586,12 +1586,12 @@ async function submitForm(btn) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Submission failed');
 
-    btn.textContent = '✓ Sent! Redirecting to WhatsApp...';
+    btn.textContent = '✓  Submitted Successfully!';
     btn.style.background = '#25d366';
     btn.style.color = 'white';
 
     setTimeout(() => {
-      window.open(data.waUrl, '_blank');
+     // window.open(data.waUrl, '_blank');
       btn.textContent = "✓ Submitted! We'll WhatsApp you shortly.";
     }, 1500);
 
