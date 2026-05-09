@@ -76,6 +76,23 @@ nav.scrolled{
 .nav-links{display:flex;gap:28px;list-style:none;margin:0 auto}
 .nav-links a{font-size:13px;font-weight:500;color:rgba(255,255,255,.5);text-decoration:none;transition:color .2s;letter-spacing:.3px}
 .nav-links a:hover{color:var(--gold2)}
+
+/* Active menu color */
+.nav-links a.active{
+  color: var(--gold2);
+  position: relative;
+}
+
+.nav-links a.active::after{
+  content:'';
+  position:absolute;
+  left:0;
+  bottom:-8px;
+  width:100%;
+  height:2px;
+  background:var(--gold2);
+  border-radius:10px;
+}
 .nav-actions{display:flex;gap:9px}
 .nbtn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .25s;font-family:'Satoshi',sans-serif;letter-spacing:.3px;border:none}
 .nbtn-wa{background:#25d366;color:white;display:flex;align-items:center;gap:6px}
@@ -1604,3 +1621,29 @@ document.querySelectorAll('.stack-card').forEach((card,i)=>{
 </script>
 </body>
 </html>
+
+<script>
+const sections = document.querySelectorAll("section[id]");
+const navLinks = document.querySelectorAll(".nav-links a");
+
+window.addEventListener("scroll", () => {
+  let current = "";
+
+  sections.forEach(section => {
+    const sectionTop = section.offsetTop - 120;
+    const sectionHeight = section.offsetHeight;
+
+    if (pageYOffset >= sectionTop) {
+      current = section.getAttribute("id");
+    }
+  });
+
+  navLinks.forEach(link => {
+    link.classList.remove("active");
+
+    if (link.getAttribute("href") === "#" + current) {
+      link.classList.add("active");
+    }
+  });
+});
+</script>
