@@ -1615,30 +1615,33 @@ document.querySelectorAll('.stack-card').forEach((card,i)=>{
 </script>
 </body>
 </html>
-
 <script>
 const sections = document.querySelectorAll("section[id]");
 const navLinks = document.querySelectorAll(".nav-links a");
 
 window.addEventListener("scroll", () => {
-  let current = "";
 
-  sections.forEach(section => {
+  let currentSection = "";
+
+  sections.forEach((section) => {
     const sectionTop = section.offsetTop - 120;
     const sectionHeight = section.offsetHeight;
 
-        if (pageYOffset >= sectionTop) {
- {
-      current = section.getAttribute("id");
+    if (
+      window.scrollY >= sectionTop &&
+      window.scrollY < sectionTop + sectionHeight
+    ) {
+      currentSection = section.getAttribute("id");
     }
   });
 
-  navLinks.forEach(link => {
+  navLinks.forEach((link) => {
     link.classList.remove("active");
 
-    if (link.getAttribute("href") === "#" + current) {
+    if (link.getAttribute("href") === `#${currentSection}`) {
       link.classList.add("active");
     }
   });
+
 });
 </script>
