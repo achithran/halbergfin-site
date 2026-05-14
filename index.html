@@ -1613,28 +1613,32 @@ document.querySelectorAll('.stack-card').forEach((card,i)=>{
   });
 });
 </script>
-
 <script>
-const sections = document.querySelectorAll("section[id]");
-const navLinks = document.querySelectorAll(".nav-links a");
+(function() {
+  const NAV_IDS = ['home','vision','about','courses','instructors','faq','contact'];
+  const navLinks = document.querySelectorAll('.nav-links a');
 
-window.addEventListener("scroll", () => {
-  let current = "";
+  const targets = NAV_IDS.map(id => document.getElementById(id)).filter(Boolean);
 
-  sections.forEach(section => {
-    const sectionTop = section.offsetTop - 120;
-    if (pageYOffset >= sectionTop) {
-      current = section.getAttribute("id");
-    }
-  });
+  function updateActive() {
+    const scrollY = window.scrollY;
+    let current = '';
 
-  navLinks.forEach(link => {
-    link.classList.remove("active");
-    if (link.getAttribute("href") === "#" + current) {
-      link.classList.add("active");
-    }
-  });
-});
+    targets.forEach(el => {
+      if (scrollY >= el.offsetTop - 100) {
+        current = el.id;
+      }
+    });
+
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      link.classList.toggle('active', href === '#' + current);
+    });
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive(); // run once on load
+})();
 </script>
 </body>
 </html>
