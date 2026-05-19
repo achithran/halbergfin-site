@@ -24,6 +24,36 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   opacity:.35;mix-blend-mode:multiply}
 
 /* LOGIN */
+/* ── TOOLTIP SYSTEM ── */
+[data-tip]{position:relative}
+[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(10,14,23,.96);color:rgba(255,255,255,.9);
+  font-size:11px;font-weight:500;font-family:'Satoshi',sans-serif;
+  padding:5px 10px;border-radius:7px;white-space:nowrap;
+  border:1px solid rgba(212,168,67,.2);
+  pointer-events:none;opacity:0;transition:opacity .15s,transform .15s;
+  transform:translateX(-50%) translateY(4px);
+  z-index:9998;letter-spacing:.2px;
+}
+[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+/* arrow */
+[data-tip]::before{
+  content:'';position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:rgba(10,14,23,.96);
+  pointer-events:none;opacity:0;transition:opacity .15s;z-index:9998;
+}
+[data-tip]:hover::before{opacity:1}
+/* tip on bottom */
+[data-tip-pos="bottom"]::after{top:calc(100% + 8px);bottom:auto;transform:translateX(-50%) translateY(-4px)}
+[data-tip-pos="bottom"]:hover::after{transform:translateX(-50%) translateY(0)}
+[data-tip-pos="bottom"]::before{top:calc(100% + 2px);bottom:auto;border-top-color:transparent;border-bottom-color:rgba(10,14,23,.96)}
+/* tip on left */
+[data-tip-pos="left"]::after{right:calc(100% + 8px);left:auto;top:50%;bottom:auto;transform:translateY(-50%) translateX(4px);white-space:nowrap}
+[data-tip-pos="left"]:hover::after{transform:translateY(-50%) translateX(0)}
+[data-tip-pos="left"]::before{right:calc(100% + 2px);left:auto;top:50%;bottom:auto;transform:translateY(-50%);border-top-color:transparent;border-left-color:rgba(10,14,23,.96)}
+
 #login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ink);z-index:100}
 .login-box{width:360px;background:var(--ink2);border:1px solid var(--border);border-radius:20px;padding:44px 36px;position:relative;overflow:hidden}
 .login-box::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(212,168,67,.12) 0%,transparent 65%);border-radius:50%;pointer-events:none}
@@ -300,16 +330,16 @@ tbody tr.row-rejected{opacity:.5}
     </div>
     <div class="tb-right">
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
-      <button class="tb-btn tb-add" onclick="openAddModal()">+ Add Lead</button>
-      <button class="tb-btn tb-refresh" onclick="loadData()">↻ Refresh</button>
-      <button class="tb-btn tb-logout" onclick="logout()">Sign Out</button>
+      <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
+      <button class="tb-btn tb-refresh" onclick="loadData()" data-tip="Refresh all lead data">↻ Refresh</button>
+      <button class="tb-btn tb-logout" onclick="logout()" data-tip="Sign out of admin">Sign Out</button>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
-    <div class="tab active" id="tab-btn-leads" onclick="switchTab('leads')">📋 All Leads <span class="tab-badge" id="pending-badge" style="display:none">0</span></div>
-    <div class="tab" id="tab-btn-followups" onclick="switchTab('followups')">📅 Follow-Ups</div>
+    <div class="tab active" id="tab-btn-leads" onclick="switchTab('leads')" data-tip-pos="bottom" data-tip="All leads, stats and filters">📋 All Leads <span class="tab-badge" id="pending-badge" style="display:none">0</span></div>
+    <div class="tab" id="tab-btn-followups" onclick="switchTab('followups')" data-tip-pos="bottom" data-tip="All pending follow-up calls">📅 Follow-Ups</div>
   </div>
 
   <!-- LEADS TAB -->
@@ -318,10 +348,10 @@ tbody tr.row-rejected{opacity:.5}
     <div class="page-sub" id="dash-sub">Loading enquiries...</div>
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-ico">✅</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Active Leads</div></div>
-      <div class="stat-card"><div class="stat-ico">⏳</div><div class="stat-val" id="s-pending">—</div><div class="stat-lbl">Pending Review</div></div>
-      <div class="stat-card"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today (All)</div></div>
-      <div class="stat-card"><div class="stat-ico">🏆</div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Course</div></div>
+      <div class="stat-card" data-tip="Leads approved by admin" data-tip-pos="bottom"><div class="stat-ico">✅</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Active Leads</div></div>
+      <div class="stat-card" data-tip="New form submissions awaiting review" data-tip-pos="bottom"><div class="stat-ico">⏳</div><div class="stat-val" id="s-pending">—</div><div class="stat-lbl">Pending Review</div></div>
+      <div class="stat-card" data-tip="Total enquiries received today" data-tip-pos="bottom"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today (All)</div></div>
+      <div class="stat-card" data-tip="Course with most active leads" data-tip-pos="bottom"><div class="stat-ico">🏆</div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Course</div></div>
     </div>
 
     <div class="breakdown-grid">
@@ -344,10 +374,10 @@ tbody tr.row-rejected{opacity:.5}
     </div>
 
     <div class="status-pills">
-      <button class="s-pill active" id="pill-all"      onclick="setStatusFilter('all',this)">All <span id="cnt-all">0</span></button>
-      <button class="s-pill s-pill-pending" id="pill-pending"  onclick="setStatusFilter('pending',this)">⏳ Pending <span id="cnt-pending">0</span></button>
-      <button class="s-pill s-pill-active"  id="pill-active"   onclick="setStatusFilter('active',this)">✅ Active <span id="cnt-active">0</span></button>
-      <button class="s-pill s-pill-rejected" id="pill-rejected" onclick="setStatusFilter('rejected',this)">🗑 Rejected <span id="cnt-rejected">0</span></button>
+      <button class="s-pill active" id="pill-all" onclick="setStatusFilter('all',this)" data-tip="Show all leads">All <span id="cnt-all">0</span></button>
+      <button class="s-pill s-pill-pending" id="pill-pending" onclick="setStatusFilter('pending',this)" data-tip="Waiting for your approval">⏳ Pending <span id="cnt-pending">0</span></button>
+      <button class="s-pill s-pill-active" id="pill-active" onclick="setStatusFilter('active',this)" data-tip="Approved leads ready to follow up">✅ Active <span id="cnt-active">0</span></button>
+      <button class="s-pill s-pill-rejected" id="pill-rejected" onclick="setStatusFilter('rejected',this)" data-tip="Spam or invalid — soft deleted">🗑 Rejected <span id="cnt-rejected">0</span></button>
     </div>
 
     <div class="toolbar">
@@ -363,7 +393,7 @@ tbody tr.row-rejected{opacity:.5}
         <option>Trading Psychology</option>
         <option>All 4 Courses Bundle</option>
       </select>
-      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="export-btn" onclick="exportCSV()" data-tip="Download filtered leads as CSV">⬇ Export CSV</button>
       <span class="leads-count" id="leads-count"></span>
     </div>
 
@@ -698,9 +728,9 @@ function renderTable(){
     const mailLink=l.email?`mailto:${l.email}?subject=Your Halberg Fin Enquiry&body=Hi ${l.first_name},`:'';
     const st=l.status||'pending';
     const badge=st==='active'?`<span class="badge badge-active">✅ Active</span>`:st==='rejected'?`<span class="badge badge-rejected">🗑 Rejected</span>`:`<span class="badge badge-pending">⏳ Pending</span>`;
-    const approveBtn=st!=='active'?`<button class="act-btn act-approve" onclick="event.stopPropagation();setStatus('${l.id}','active')" title="Approve">✓</button>`:'';
-    const rejectBtn=st!=='rejected'?`<button class="act-btn act-reject" onclick="event.stopPropagation();setStatus('${l.id}','rejected')" title="Reject">✗</button>`:'';
-    const restoreBtn=st==='rejected'?`<button class="act-btn act-restore" onclick="event.stopPropagation();setStatus('${l.id}','pending')" title="Restore">↩</button>`:'';
+    const approveBtn=st!=='active'?`<button class="act-btn act-approve" data-tip="Approve this lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','active')" title="Approve">✓</button>`:'';
+    const rejectBtn=st!=='rejected'?`<button class="act-btn act-reject" data-tip="Reject as spam" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')" title="Reject">✗</button>`:'';
+    const restoreBtn=st==='rejected'?`<button class="act-btn act-restore" data-tip="Restore to pending" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','pending')" title="Restore">↩</button>`:'';
     return `<tr class="row-${st}">
       <td style="color:var(--muted);font-size:11px">${num}</td>
       <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div>${badge}</td>
@@ -712,9 +742,9 @@ function renderTable(){
       <td><div class="td-date">${date}</div></td>
       <td><div class="td-actions">
         ${approveBtn}${rejectBtn}${restoreBtn}
-        <a class="act-btn act-wa" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
-        ${l.email?`<a class="act-btn act-mail" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
-        <button class="act-btn act-log" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
+        <a class="act-btn act-wa" data-tip="Open WhatsApp chat" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
+        ${l.email?`<a class="act-btn act-mail" data-tip="Send email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
+        <button class="act-btn act-log" data-tip="View activity log & follow-ups" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
       </div></td>
     </tr>`;
   }).join('');
