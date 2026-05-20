@@ -663,8 +663,7 @@ function updateStats(){
         <div style="font-size:11px;color:var(--muted)">${esc(l.course_interest||'No course')}</div>
       </div>
       <div style="font-size:10px;color:var(--green)">${l.status==='active'?'✅':l.status==='rejected'?'🗑':'⏳'}</div>
-      ${st==='pending'?`<button class="act-btn act-approve" style="padding:4px 8px;font-size:10px" onclick="setStatus('${l.id}','active')">✓</button>`:''}
-${st==='active'?`<button class="act-btn" style="padding:4px 8px;font-size:10px;background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25)" onclick="setStatus('${l.id}','enrolled')">🎓</button>`:''}
+      <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" onclick="openActivityModal('${l.id}')">📋</button>
     </div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No new leads today</div>';
 
   // 4. Upcoming follow-ups — load async
