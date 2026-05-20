@@ -268,6 +268,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .badge-pending{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.25)}
 .badge-active{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
 .badge-rejected{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2)}
+.badge-enrolled{background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.3)}
 
 /* STATUS FILTER PILLS */
 .status-pills{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
@@ -277,6 +278,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .s-pill-pending.active{background:rgba(212,168,67,.15);border-color:rgba(212,168,67,.4);color:var(--gold)}
 .s-pill-active.active{background:rgba(46,204,113,.12);border-color:rgba(46,204,113,.35);color:var(--green)}
 .s-pill-rejected.active{background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3);color:var(--red)}
+.s-pill-enrolled.active{background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.3);color:#a78bfa}
 
 /* APPROVE/REJECT ACTIONS */
 .act-approve{background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.2)}.act-approve:hover{background:rgba(46,204,113,.22)}
@@ -286,6 +288,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 /* PENDING HIGHLIGHT ROW */
 tbody tr.row-pending{border-left:3px solid rgba(212,168,67,.4)}
 tbody tr.row-rejected{opacity:.5}
+tbody tr.row-enrolled{border-left:3px solid rgba(139,92,246,.5)}
 
 /* PENDING COUNT BADGE ON TAB */
 .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:white;font-size:10px;font-weight:700;margin-left:6px;padding:0 5px}
@@ -350,8 +353,8 @@ tbody tr.row-rejected{opacity:.5}
     <div class="stats-grid">
       <div class="stat-card" data-tip="Leads approved by admin" data-tip-pos="bottom"><div class="stat-ico">✅</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Active Leads</div></div>
       <div class="stat-card" data-tip="New form submissions awaiting review" data-tip-pos="bottom"><div class="stat-ico">⏳</div><div class="stat-val" id="s-pending">—</div><div class="stat-lbl">Pending Review</div></div>
+      <div class="stat-card" data-tip="Converted — paid and enrolled" data-tip-pos="bottom"><div class="stat-ico">🎓</div><div class="stat-val" id="s-enrolled">—</div><div class="stat-lbl">Enrolled</div></div>
       <div class="stat-card" data-tip="Total enquiries received today" data-tip-pos="bottom"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today (All)</div></div>
-      <div class="stat-card" data-tip="Course with most active leads" data-tip-pos="bottom"><div class="stat-ico">🏆</div><div class="stat-val" id="s-top">—</div><div class="stat-lbl">Top Course</div></div>
     </div>
 
     <div class="breakdown-grid">
@@ -377,6 +380,7 @@ tbody tr.row-rejected{opacity:.5}
       <button class="s-pill active" id="pill-all" onclick="setStatusFilter('all',this)" data-tip="Show all leads">All <span id="cnt-all">0</span></button>
       <button class="s-pill s-pill-pending" id="pill-pending" onclick="setStatusFilter('pending',this)" data-tip="Waiting for your approval">⏳ Pending <span id="cnt-pending">0</span></button>
       <button class="s-pill s-pill-active" id="pill-active" onclick="setStatusFilter('active',this)" data-tip="Approved leads ready to follow up">✅ Active <span id="cnt-active">0</span></button>
+      <button class="s-pill s-pill-enrolled" id="pill-enrolled" onclick="setStatusFilter('enrolled',this)" data-tip="Converted — paid and enrolled">🎓 Enrolled <span id="cnt-enrolled">0</span></button>
       <button class="s-pill s-pill-rejected" id="pill-rejected" onclick="setStatusFilter('rejected',this)" data-tip="Spam or invalid — soft deleted">🗑 Rejected <span id="cnt-rejected">0</span></button>
     </div>
 
@@ -609,11 +613,13 @@ function updateStats(){
   const active=allLeads.filter(l=>l.status==='active');
   const pending=allLeads.filter(l=>l.status==='pending'||!l.status);
   const rejected=allLeads.filter(l=>l.status==='rejected');
+  const enrolled=allLeads.filter(l=>l.status==='enrolled');
   const today=allLeads.filter(l=>new Date(l.created_at).toDateString()===n.toDateString()).length;
 
   document.getElementById('cnt-all').textContent=allLeads.length;
   document.getElementById('cnt-pending').textContent=pending.length;
   document.getElementById('cnt-active').textContent=active.length;
+  document.getElementById('cnt-enrolled').textContent=enrolled.length;
   document.getElementById('cnt-rejected').textContent=rejected.length;
 
   const pb=document.getElementById('pending-badge');
@@ -624,9 +630,10 @@ function updateStats(){
 
   document.getElementById('s-total').textContent=active.length;
   document.getElementById('s-pending').textContent=pending.length;
+  document.getElementById('s-enrolled').textContent=enrolled.length;
   document.getElementById('s-today').textContent=today;
   document.getElementById('s-top').textContent=top?top[1]:'—';
-  document.getElementById('dash-sub').textContent=`${active.length} active · ${pending.length} pending review · ${new Date().toLocaleTimeString('en-IN')}`;
+  document.getElementById('dash-sub').textContent=`${active.length} active · ${pending.length} pending · ${enrolled.length} enrolled · ${new Date().toLocaleTimeString('en-IN')}`;
 
   // 1. Course breakdown
   const sorted=Object.entries(cc).sort((a,b)=>b[1]-a[1]),max=sorted[0]?.[1]||1;
@@ -662,7 +669,8 @@ function updateStats(){
         <div style="font-size:13px;font-weight:700;color:white">${esc(l.first_name)} ${esc(l.last_name||'')}</div>
         <div style="font-size:11px;color:var(--muted)">${esc(l.course_interest||'No course')}</div>
       </div>
-      <div style="font-size:10px;color:var(--green)">${l.status==='active'?'✅':l.status==='rejected'?'🗑':'⏳'}</div>
+      <div style="font-size:10px">${l.status==='active'?'✅':l.status==='enrolled'?'🎓':l.status==='rejected'?'🗑':'⏳'}</div>
+      <button class="act-btn act-approve" style="padding:4px 8px;font-size:10px" onclick="setStatus('${l.id}','active')" ${l.status==='active'||l.status==='enrolled'?'style="display:none"':''}>✓</button>
       <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" onclick="openActivityModal('${l.id}')">📋</button>
     </div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No new leads today</div>';
 
@@ -727,9 +735,10 @@ function renderTable(){
     const waLink=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up on your Halberg Fin enquiry about ${l.course_interest||'our courses'}. When is a good time to connect?`)}`;
     const mailLink=l.email?`mailto:${l.email}?subject=Your Halberg Fin Enquiry&body=Hi ${l.first_name},`:'';
     const st=l.status||'pending';
-    const badge=st==='active'?`<span class="badge badge-active">✅ Active</span>`:st==='rejected'?`<span class="badge badge-rejected">🗑 Rejected</span>`:`<span class="badge badge-pending">⏳ Pending</span>`;
+    const badge=getBadge(st);
     const approveBtn=st!=='active'?`<button class="act-btn act-approve" data-tip="Approve this lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','active')" title="Approve">✓</button>`:'';
     const rejectBtn=st!=='rejected'?`<button class="act-btn act-reject" data-tip="Reject as spam" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')" title="Reject">✗</button>`:'';
+    const enrollBtn=st==='active'?`<button class="act-btn" style="background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25);" data-tip="Mark as Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>`:'';
     const restoreBtn=st==='rejected'?`<button class="act-btn act-restore" data-tip="Restore to pending" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','pending')" title="Restore">↩</button>`:'';
     return `<tr class="row-${st}">
       <td style="color:var(--muted);font-size:11px">${num}</td>
@@ -741,7 +750,7 @@ function renderTable(){
       <td><div class="td-msg" title="${esc(l.message||'')}">${esc(l.message||'—')}</div></td>
       <td><div class="td-date">${date}</div></td>
       <td><div class="td-actions">
-        ${approveBtn}${rejectBtn}${restoreBtn}
+        ${approveBtn}${enrollBtn}${rejectBtn}${restoreBtn}
         <a class="act-btn act-wa" data-tip="Open WhatsApp chat" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
         ${l.email?`<a class="act-btn act-mail" data-tip="Send email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
         <button class="act-btn act-log" data-tip="View activity log & follow-ups" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
@@ -759,6 +768,13 @@ function renderTable(){
   document.getElementById('page-btns').innerHTML=btns.join('');
 }
 function goPage(p){page=p;renderTable();window.scrollTo({top:0,behavior:'smooth'})}
+
+function getBadge(st){
+  if(st==='active') return '<span class="badge badge-active">✅ Active</span>';
+  if(st==='enrolled') return '<span class="badge badge-enrolled">🎓 Enrolled</span>';
+  if(st==='rejected') return '<span class="badge badge-rejected">🗑 Rejected</span>';
+  return '<span class="badge badge-pending">⏳ Pending</span>';
+}
 
 // ── SET STATUS ────────────────────
 async function setStatus(id, status){
@@ -858,7 +874,7 @@ async function openActivityModal(leadId){
   activeLead=allLeads.find(l=>l.id===leadId);
   if(!activeLead) return;
   const st=activeLead.status||'pending';
-  const badge=st==='active'?`<span class="badge badge-active">✅ Active</span>`:st==='rejected'?`<span class="badge badge-rejected">🗑 Rejected</span>`:`<span class="badge badge-pending">⏳ Pending</span>`;
+  const badge=getBadge(st);
   document.getElementById('lp-name').innerHTML=`${esc(activeLead.first_name||'')} ${esc(activeLead.last_name||'')} ${badge}`;
   document.getElementById('lp-wa').textContent=activeLead.whatsapp||'—';
   document.getElementById('lp-email').textContent=activeLead.email||'—';
@@ -870,8 +886,9 @@ async function openActivityModal(leadId){
   // Status action buttons inside modal
   const actDiv=document.getElementById('lp-status-actions');
   if(actDiv){
-    actDiv.innerHTML=st!=='active'?`<button class="act-btn act-approve" onclick="setStatus('${activeLead.id}','active');document.getElementById('lp-name').innerHTML='${esc(activeLead.first_name)} <span class=\'badge badge-active\'>✅ Active</span>';document.getElementById('lp-status-actions').innerHTML=''">✓ Approve Lead</button>`:'';
-    if(st!=='rejected') actDiv.innerHTML+=`<button class="act-btn act-reject" onclick="setStatus('${activeLead.id}','rejected');closeModal('modal-activity')">✗ Reject Lead</button>`;
+    actDiv.innerHTML=st!=='active'&&st!=='enrolled'?`<button class="act-btn act-approve" onclick="setStatus('${activeLead.id}','active');location.reload()">✓ Approve Lead</button>`:'';
+    if(st==='active') actDiv.innerHTML+=`<button class="act-btn" style="background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25)" onclick="setStatus('${activeLead.id}','enrolled');closeModal('modal-activity')">🎓 Mark Enrolled</button>`;
+    if(st!=='rejected') actDiv.innerHTML+=`<button class="act-btn act-reject" onclick="setStatus('${activeLead.id}','rejected');closeModal('modal-activity')">✗ Reject</button>`;
     if(st==='rejected') actDiv.innerHTML+=`<button class="act-btn act-restore" onclick="setStatus('${activeLead.id}','pending');closeModal('modal-activity')">↩ Restore</button>`;
   }
 
@@ -920,7 +937,7 @@ async function deleteLog(id){
 async function loadFU(){
   document.getElementById('fu-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px"><span class="spinner"></span></div>';
   try{
-    const fus=await sb(`/rest/v1/follow_ups?enquiry_id=eq.${activeLead.id}&order=scheduled_date.asc&select=*`);
+    const fus=await sb(`/rest/v1/follow_ups?enquiry_id=eq.${activeLead.id}&order=scheduled_date.desc&select=*`);
     renderFUList(fus||[]);
   }catch(e){document.getElementById('fu-list').innerHTML=`<div style="color:var(--red);font-size:13px">${e.message}</div>`}
 }
