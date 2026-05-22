@@ -632,7 +632,6 @@ function updateStats(){
   document.getElementById('s-pending').textContent=pending.length;
   document.getElementById('s-enrolled').textContent=enrolled.length;
   document.getElementById('s-today').textContent=today;
-  document.getElementById('s-top').textContent=top?top[1]:'—';
   document.getElementById('dash-sub').textContent=`${active.length} active · ${pending.length} pending · ${enrolled.length} enrolled · ${new Date().toLocaleTimeString('en-IN')}`;
 
   // 1. Course breakdown
