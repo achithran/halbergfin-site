@@ -1012,4 +1012,1060 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function fmtDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
 </script>
 </body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Halberg Fin — Admin v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Satoshi:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0a0e17;--ink2:#111827;--ink3:#1a2035;
+  --gold:#d4a843;--gold2:#f0c84a;
+  --cream:#faf6ed;--border:rgba(212,168,67,.15);
+  --muted:rgba(255,255,255,.35);--text:rgba(255,255,255,.85);
+  --green:#2ecc71;--red:#e74c3c;--blue:#3b82f6;
+  --r:12px;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{font-family:'Satoshi',sans-serif;background:var(--ink);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:4px}
+::selection{background:var(--gold);color:var(--ink)}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.35;mix-blend-mode:multiply}
+
+/* LOGIN */
+/* ── TOOLTIP SYSTEM ── */
+[data-tip]{position:relative}
+[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(10,14,23,.96);color:rgba(255,255,255,.9);
+  font-size:11px;font-weight:500;font-family:'Satoshi',sans-serif;
+  padding:5px 10px;border-radius:7px;white-space:nowrap;
+  border:1px solid rgba(212,168,67,.2);
+  pointer-events:none;opacity:0;transition:opacity .15s,transform .15s;
+  transform:translateX(-50%) translateY(4px);
+  z-index:9998;letter-spacing:.2px;
+}
+[data-tip]:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
+/* arrow */
+[data-tip]::before{
+  content:'';position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:rgba(10,14,23,.96);
+  pointer-events:none;opacity:0;transition:opacity .15s;z-index:9998;
+}
+[data-tip]:hover::before{opacity:1}
+/* tip on bottom */
+[data-tip-pos="bottom"]::after{top:calc(100% + 8px);bottom:auto;transform:translateX(-50%) translateY(-4px)}
+[data-tip-pos="bottom"]:hover::after{transform:translateX(-50%) translateY(0)}
+[data-tip-pos="bottom"]::before{top:calc(100% + 2px);bottom:auto;border-top-color:transparent;border-bottom-color:rgba(10,14,23,.96)}
+/* tip on left */
+[data-tip-pos="left"]::after{right:calc(100% + 8px);left:auto;top:50%;bottom:auto;transform:translateY(-50%) translateX(4px);white-space:nowrap}
+[data-tip-pos="left"]:hover::after{transform:translateY(-50%) translateX(0)}
+[data-tip-pos="left"]::before{right:calc(100% + 2px);left:auto;top:50%;bottom:auto;transform:translateY(-50%);border-top-color:transparent;border-left-color:rgba(10,14,23,.96)}
+
+#login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--ink);z-index:100}
+.login-box{width:360px;background:var(--ink2);border:1px solid var(--border);border-radius:20px;padding:44px 36px;position:relative;overflow:hidden}
+.login-box::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(212,168,67,.12) 0%,transparent 65%);border-radius:50%;pointer-events:none}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold2);letter-spacing:2px;margin-bottom:4px}
+.login-sub{font-size:10px;color:rgba(212,168,67,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px}
+.login-label{font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
+.login-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-family:'Satoshi',sans-serif;font-size:14px;color:white;outline:none;transition:border-color .25s;margin-bottom:16px}
+.login-input:focus{border-color:rgba(212,168,67,.5)}
+.login-input::placeholder{color:rgba(255,255,255,.2)}
+.login-btn{width:100%;padding:13px;background:var(--gold);border:none;border-radius:9px;font-family:'Satoshi',sans-serif;font-size:14px;font-weight:800;color:var(--ink);cursor:pointer;transition:all .25s}
+.login-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;display:none;text-align:center}
+
+#app{display:none}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(10,14,23,.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px}
+.tb-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold2);letter-spacing:2px}
+.tb-sub{font-size:9px;color:rgba(212,168,67,.4);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s;border:1px solid var(--border);letter-spacing:.3px}
+.tb-refresh{background:rgba(212,168,67,.1);color:var(--gold)}.tb-refresh:hover{background:rgba(212,168,67,.2)}
+.tb-add{background:var(--gold);color:var(--ink);border-color:var(--gold)}.tb-add:hover{background:var(--gold2)}
+.tb-logout{background:transparent;color:rgba(255,255,255,.4)}.tb-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;padding:20px 32px 0;border-bottom:1px solid var(--border);background:var(--ink2)}
+.tab{padding:10px 20px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;letter-spacing:.5px;text-transform:uppercase}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* MAIN */
+.main{padding:32px}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:36px;color:white;letter-spacing:1px;margin-bottom:6px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:32px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:22px 24px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:rgba(212,168,67,.3)}
+.stat-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 0% 0%,rgba(212,168,67,.05) 0%,transparent 60%);pointer-events:none}
+.stat-ico{font-size:22px;margin-bottom:12px}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:44px;color:var(--gold2);line-height:1;letter-spacing:1px}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px}
+
+/* BREAKDOWN */
+.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+.breakdown-card{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:24px}
+.card-title{font-size:10px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:18px}
+.course-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.course-row:last-child{margin-bottom:0}
+.course-name{font-size:13px;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.course-bar-wrap{flex:2;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.course-bar{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.course-count{font-size:12px;font-weight:700;color:var(--gold);min-width:24px;text-align:right}
+.date-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.date-row:last-child{border:none}
+.date-label{color:var(--muted)}.date-count{font-weight:700;color:var(--gold2)}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+.search-input,.filter-select{background:var(--ink2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none}
+.search-input{width:100%;padding-left:36px}
+.search-input:focus,.filter-select:focus{border-color:rgba(212,168,67,.4)}
+.search-input::placeholder{color:var(--muted)}
+.filter-select option{background:var(--ink2)}
+.export-btn{background:rgba(212,168,67,.1);border:1px solid var(--border);color:var(--gold);padding:10px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s;white-space:nowrap}
+.export-btn:hover{background:rgba(212,168,67,.2)}
+.leads-count{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* TABLE */
+.table-wrap{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:rgba(212,168,67,.05);border-bottom:1px solid var(--border)}
+th{padding:13px 16px;font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;text-align:left;white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
+tbody tr:last-child{border:none}
+tbody tr:hover{background:rgba(212,168,67,.03)}
+td{padding:13px 16px;font-size:13px;vertical-align:middle}
+.td-name{font-weight:700;color:white}
+.td-wa{color:var(--green);font-size:12px}
+.td-email{color:rgba(255,255,255,.45);font-size:12px}
+.td-course{font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(212,168,67,.08);color:var(--gold);border:1px solid rgba(212,168,67,.18);letter-spacing:.5px;white-space:nowrap;display:inline-block}
+.td-exp{font-size:11px;color:var(--muted)}
+.td-msg{font-size:12px;color:rgba(255,255,255,.4);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.td-actions{display:flex;gap:5px}
+.act-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;transition:all .2s;border:none;font-family:'Satoshi',sans-serif;white-space:nowrap}
+.act-wa{background:rgba(37,211,102,.12);color:#25d366;border:1px solid rgba(37,211,102,.2)}.act-wa:hover{background:rgba(37,211,102,.22)}
+.act-mail{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)}.act-mail:hover{background:rgba(59,130,246,.2)}
+.act-log{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)}.act-log:hover{background:rgba(212,168,67,.2)}
+
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+.page-btns{display:flex;gap:6px}
+.page-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-family:'Satoshi',sans-serif;font-size:12px;transition:all .2s}
+.page-btn:hover{border-color:var(--gold);color:var(--gold)}
+.page-btn.active{background:var(--gold);border-color:var(--gold);color:var(--ink);font-weight:700}
+.page-btn:disabled{opacity:.3;cursor:default}
+.empty{text-align:center;padding:64px 24px;color:var(--muted)}
+.empty-ico{font-size:40px;margin-bottom:12px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(212,168,67,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--ink2);border:1px solid var(--border);border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;position:relative}
+.modal-wide{max-width:660px}
+.modal-header{padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--ink2);z-index:1;border-radius:20px 20px 0 0}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold2);letter-spacing:1px}
+.modal-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.modal-close:hover{background:rgba(231,76,60,.1);border-color:var(--red);color:var(--red)}
+.modal-body{padding:22px 28px 28px}
+
+/* FORM */
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;transition:border-color .25s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:rgba(212,168,67,.45)}
+.fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.2)}
+.fg select option{background:var(--ink2)}
+.fg textarea{resize:vertical;min-height:85px;line-height:1.6}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-actions{display:flex;gap:10px;margin-top:20px}
+.btn-primary{flex:1;padding:12px;background:var(--gold);border:none;border-radius:9px;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:800;color:var(--ink);cursor:pointer;transition:all .25s}
+.btn-primary:hover{background:var(--gold2);transform:translateY(-1px)}
+.btn-secondary{padding:12px 20px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;font-family:'Satoshi',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:all .2s}
+.btn-secondary:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
+.form-msg{font-size:12px;padding:10px 14px;border-radius:8px;margin-bottom:14px;display:none}
+.form-msg.success{background:rgba(46,204,113,.08);border:1px solid rgba(46,204,113,.2);color:var(--green)}
+.form-msg.error{background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.2);color:var(--red)}
+.form-msg.warning{background:rgba(212,168,67,.08);border:1px solid rgba(212,168,67,.2);color:var(--gold)}
+
+/* DUPLICATE BANNER */
+.dup-banner{background:rgba(212,168,67,.07);border:1px solid rgba(212,168,67,.25);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:none;align-items:center;justify-content:space-between;gap:12px}
+.dup-banner.show{display:flex}
+.dup-info strong{display:block;font-size:13px;color:var(--gold);margin-bottom:2px}
+.dup-info span{font-size:11px;color:rgba(212,168,67,.5)}
+.dup-open-btn{background:var(--gold);border:none;border-radius:8px;padding:9px 16px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:800;color:var(--ink);cursor:pointer;white-space:nowrap;flex-shrink:0}
+
+/* ACTIVITY MODAL */
+.lead-profile{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.lp-name{font-size:17px;font-weight:700;color:white;margin-bottom:6px}
+.lp-meta{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.lp-item{font-size:12px;color:var(--muted)}
+.lp-item b{color:var(--text);font-weight:500}
+.lp-course{display:inline-flex;font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(212,168,67,.08);color:var(--gold);border:1px solid rgba(212,168,67,.18);margin-bottom:10px}
+.lp-actions{display:flex;gap:8px}
+
+/* SECTION LABELS */
+.section-label{font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px}
+
+/* ADD NOTE */
+.add-note-box{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px}
+.note-textarea{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;resize:vertical;min-height:75px;transition:border-color .25s;margin-bottom:10px;line-height:1.6}
+.note-textarea:focus{border-color:rgba(212,168,67,.45)}
+.note-textarea::placeholder{color:rgba(255,255,255,.2)}
+.note-row{display:flex;gap:8px;align-items:center}
+.note-type{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none}
+.note-type option{background:var(--ink2)}
+.btn-save-note{padding:9px 20px;background:var(--gold);border:none;border-radius:8px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:800;color:var(--ink);cursor:pointer;transition:all .2s}
+.btn-save-note:hover{background:var(--gold2)}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:1px;background:rgba(212,168,67,.12)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{position:absolute;left:-16px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--gold);border:2px solid var(--ink2)}
+.tl-time{font-size:10px;color:var(--muted);margin-bottom:4px}
+.tl-note{font-size:13px;color:var(--text);background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 14px;line-height:1.6;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.tl-del{background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:12px;flex-shrink:0;padding:2px;transition:color .2s}
+.tl-del:hover{color:var(--red)}
+.no-activity{text-align:center;padding:24px;color:var(--muted);font-size:13px}
+
+/* FOLLOW-UPS */
+.followup-box{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:18px}
+.fu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);margin-bottom:8px}
+.fu-item:last-child{margin-bottom:0}
+.fu-item.fu-done{opacity:.4}
+.fu-date{font-size:11px;font-weight:700;color:var(--gold2);min-width:80px}
+.fu-date.overdue{color:var(--red)}
+.fu-note-text{font-size:12px;color:var(--text);flex:1}
+.fu-check{width:20px;height:20px;border-radius:5px;border:1px solid rgba(212,168,67,.3);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;flex-shrink:0;color:transparent}
+.fu-check.checked{background:var(--green);border-color:var(--green);color:white}
+.fu-del{background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:12px;padding:0 2px;transition:color .2s;flex-shrink:0}
+.fu-del:hover{color:var(--red)}
+.add-fu-row{display:grid;grid-template-columns:150px 1fr auto;gap:8px;align-items:end;margin-top:12px}
+.fu-input{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none;width:100%;transition:border-color .25s}
+.fu-input:focus{border-color:rgba(212,168,67,.4)}
+.fu-input::placeholder{color:rgba(255,255,255,.2)}
+input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
+.btn-add-fu{padding:9px 16px;background:rgba(212,168,67,.1);border:1px solid var(--border);border-radius:8px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;color:var(--gold);cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-add-fu:hover{background:rgba(212,168,67,.2)}
+
+/* GLOBAL FOLLOWUPS TAB */
+/* ── PHONE INPUT ── */
+.phone-wrap{display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:rgba(255,255,255,.04);transition:border-color .25s}
+.phone-wrap:focus-within{border-color:rgba(212,168,67,.45)}
+.country-select{background:rgba(255,255,255,.06);border:none;border-right:1px solid var(--border);padding:11px 8px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none;cursor:pointer;min-width:105px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(212,168,67,.5)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
+.country-select option{background:#111827;color:white}
+.phone-input{flex:1;background:transparent;border:none;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none}
+.phone-input::placeholder{color:rgba(255,255,255,.2)}
+
+.fu-global-day{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;margin-bottom:16px}
+.fu-global-day-title{font-size:10px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:14px}
+.fu-global-day-title.overdue{color:var(--red)}
+.fu-global-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);margin-bottom:8px}
+.fu-global-item:last-child{margin-bottom:0}
+.fu-lead-info{flex:1}
+.fu-lead-name{font-size:13px;font-weight:700;color:white}
+.fu-lead-wa{font-size:11px;color:var(--green)}
+.fu-lead-note{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* STATUS BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;letter-spacing:.5px;white-space:nowrap}
+.badge-pending{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.25)}
+.badge-active{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
+.badge-rejected{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2)}
+.badge-enrolled{background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.3)}
+
+/* STATUS FILTER PILLS */
+.status-pills{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.s-pill{padding:7px 16px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;font-family:'Satoshi',sans-serif;transition:all .2s;letter-spacing:.3px}
+.s-pill:hover{border-color:rgba(212,168,67,.3);color:var(--text)}
+.s-pill.active{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+.s-pill-pending.active{background:rgba(212,168,67,.15);border-color:rgba(212,168,67,.4);color:var(--gold)}
+.s-pill-active.active{background:rgba(46,204,113,.12);border-color:rgba(46,204,113,.35);color:var(--green)}
+.s-pill-rejected.active{background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3);color:var(--red)}
+.s-pill-enrolled.active{background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.3);color:#a78bfa}
+
+/* APPROVE/REJECT ACTIONS */
+.act-approve{background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.2)}.act-approve:hover{background:rgba(46,204,113,.22)}
+.act-reject{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2)}.act-reject:hover{background:rgba(231,76,60,.15)}
+.act-restore{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)}.act-restore:hover{background:rgba(212,168,67,.2)}
+
+/* PENDING HIGHLIGHT ROW */
+tbody tr.row-pending{border-left:3px solid rgba(212,168,67,.4)}
+tbody tr.row-rejected{opacity:.5}
+tbody tr.row-enrolled{border-left:3px solid rgba(139,92,246,.5)}
+
+/* PENDING COUNT BADGE ON TAB */
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:white;font-size:10px;font-weight:700;margin-left:6px;padding:0 5px}
+
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .breakdown-grid{grid-template-columns:1fr}
+  .main{padding:16px}
+  .frow{grid-template-columns:1fr}
+  .add-fu-row{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}
+  .topbar{padding:0 16px}
+  .tb-logo{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">HALBERG FIN</div>
+    <div class="login-sub">Admin Dashboard</div>
+    <label class="login-label">Password</label>
+    <input class="login-input" type="password" id="pwd" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">→ Sign In</button>
+    <div class="login-err" id="login-err">Incorrect password</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center">
+      <span class="tb-logo">HALBERG FIN</span>
+      <span class="tb-sub">/ Admin</span>
+    </div>
+    <div class="tb-right">
+      <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
+      <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
+      <button class="tb-btn tb-refresh" onclick="loadData()" data-tip="Refresh all lead data">↻ Refresh</button>
+      <button class="tb-btn tb-logout" onclick="logout()" data-tip="Sign out of admin">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-btn-leads" onclick="switchTab('leads')" data-tip-pos="bottom" data-tip="All leads, stats and filters">📋 All Leads <span class="tab-badge" id="pending-badge" style="display:none">0</span></div>
+    <div class="tab" id="tab-btn-followups" onclick="switchTab('followups')" data-tip-pos="bottom" data-tip="All pending follow-up calls">📅 Follow-Ups</div>
+  </div>
+
+  <!-- LEADS TAB -->
+  <div id="tab-leads" class="main">
+    <div class="page-title">Lead Dashboard</div>
+    <div class="page-sub" id="dash-sub">Loading enquiries...</div>
+
+    <div class="stats-grid">
+      <div class="stat-card" data-tip="Leads approved by admin" data-tip-pos="bottom"><div class="stat-ico">✅</div><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Active Leads</div></div>
+      <div class="stat-card" data-tip="New form submissions awaiting review" data-tip-pos="bottom"><div class="stat-ico">⏳</div><div class="stat-val" id="s-pending">—</div><div class="stat-lbl">Pending Review</div></div>
+      <div class="stat-card" data-tip="Converted — paid and enrolled" data-tip-pos="bottom"><div class="stat-ico">🎓</div><div class="stat-val" id="s-enrolled">—</div><div class="stat-lbl">Enrolled</div></div>
+      <div class="stat-card" data-tip="Total enquiries received today" data-tip-pos="bottom"><div class="stat-ico">📅</div><div class="stat-val" id="s-today">—</div><div class="stat-lbl">Today (All)</div></div>
+    </div>
+
+    <div class="breakdown-grid">
+      <div class="breakdown-card">
+        <div class="card-title">Leads by Course</div>
+        <div id="course-breakdown"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="card-title">Conversion Funnel</div>
+        <div id="funnel-breakdown"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="card-title">Today's New Leads</div>
+        <div id="today-breakdown"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="card-title">Upcoming Follow-Ups</div>
+        <div id="upcoming-breakdown"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+    </div>
+
+    <div class="status-pills">
+      <button class="s-pill active" id="pill-all" onclick="setStatusFilter('all',this)" data-tip="Show all leads">All <span id="cnt-all">0</span></button>
+      <button class="s-pill s-pill-pending" id="pill-pending" onclick="setStatusFilter('pending',this)" data-tip="Waiting for your approval">⏳ Pending <span id="cnt-pending">0</span></button>
+      <button class="s-pill s-pill-active" id="pill-active" onclick="setStatusFilter('active',this)" data-tip="Approved leads ready to follow up">✅ Active <span id="cnt-active">0</span></button>
+      <button class="s-pill s-pill-enrolled" id="pill-enrolled" onclick="setStatusFilter('enrolled',this)" data-tip="Converted — paid and enrolled">🎓 Enrolled <span id="cnt-enrolled">0</span></button>
+      <button class="s-pill s-pill-rejected" id="pill-rejected" onclick="setStatusFilter('rejected',this)" data-tip="Spam or invalid — soft deleted">🗑 Rejected <span id="cnt-rejected">0</span></button>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" type="text" id="search" placeholder="Search by name, phone, email, course..." oninput="renderTable()"/>
+      </div>
+      <select class="filter-select" id="filter-course" onchange="renderTable()">
+        <option value="">All Courses</option>
+        <option>Beginner to Investor</option>
+        <option>Forex Trading — Basics to Advanced</option>
+        <option>Option Trading — Mind Over Markets</option>
+        <option>Trading Psychology</option>
+        <option>All 4 Courses Bundle</option>
+      </select>
+      <button class="export-btn" onclick="exportCSV()" data-tip="Download filtered leads as CSV">⬇ Export CSV</button>
+      <span class="leads-count" id="leads-count"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Email</th><th>Course</th><th>Experience</th><th>Message</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="leads-tbody">
+          <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading leads...</td></tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span id="page-info"></span>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOLLOW-UPS TAB -->
+  <div id="tab-followups" class="main" style="display:none">
+    <div class="page-title">Follow-Up Calendar</div>
+    <div class="page-sub">All pending follow-ups across all leads</div>
+    <div id="all-fu-wrap">
+      <div style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ADD LEAD MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ Add New Lead</div>
+      <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-msg" id="add-msg"></div>
+      <div class="dup-banner" id="dup-banner">
+        <div class="dup-info">
+          <strong id="dup-name">—</strong>
+          <span id="dup-detail">Already in database</span>
+        </div>
+        <button class="dup-open-btn" onclick="openDupLog()">View Activity Log →</button>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>First Name *</label><input type="text" id="a-fname" placeholder="Rajesh"/></div>
+        <div class="fg"><label>Last Name</label><input type="text" id="a-lname" placeholder="Mehta"/></div>
+      </div>
+      <div class="fg"><label>Email Address</label><input type="email" id="a-email" placeholder="rajesh@gmail.com"/></div>
+      <div class="fg"><label>WhatsApp Number *</label>
+        <div class="phone-wrap">
+          <select class="country-select" id="a-cc">
+            <option value="+91">🇮🇳 +91</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+            <option value="+61">🇦🇺 +61</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+65">🇸🇬 +65</option>
+            <option value="+60">🇲🇾 +60</option>
+            <option value="+94">🇱🇰 +94</option>
+            <option value="+880">🇧🇩 +880</option>
+            <option value="+92">🇵🇰 +92</option>
+            <option value="+966">🇸🇦 +966</option>
+            <option value="+974">🇶🇦 +974</option>
+            <option value="+973">🇧🇭 +973</option>
+            <option value="+968">🇴🇲 +968</option>
+            <option value="+254">🇰🇪 +254</option>
+            <option value="+234">🇳🇬 +234</option>
+            <option value="+27">🇿🇦 +27</option>
+            <option value="+49">🇩🇪 +49</option>
+            <option value="+33">🇫🇷 +33</option>
+            <option value="+81">🇯🇵 +81</option>
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+82">🇰🇷 +82</option>
+          </select>
+          <input class="phone-input" type="tel" id="a-wa" placeholder="98765 43210" oninput="checkDup(this.value)"/>
+        </div>
+      </div>
+      <div class="fg"><label>Course Interest</label>
+        <select id="a-course">
+          <option value="">Select a course</option>
+          <option>Beginner to Investor</option>
+          <option>Forex Trading — Basics to Advanced</option>
+          <option>Option Trading — Mind Over Markets</option>
+          <option>Trading Psychology</option>
+          <option>All 4 Courses Bundle</option>
+        </select>
+      </div>
+      <div class="fg"><label>Trading Experience</label>
+        <select id="a-exp">
+          <option value="">Select level</option>
+          <option>Complete Beginner — Never traded before</option>
+          <option>Beginner — Less than 1 year</option>
+          <option>Intermediate — 1 to 3 years</option>
+          <option>Experienced — 3+ years but struggling</option>
+          <option>Advanced — Want to improve psychology</option>
+        </select>
+      </div>
+      <div class="fg"><label>Notes / Message</label><textarea id="a-msg" placeholder="Context from the phone call — what they want, their situation, anything relevant..."></textarea></div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeModal('modal-add')">Cancel</button>
+        <button class="btn-primary" id="add-btn" onclick="submitLead()">Save Lead</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY LOG MODAL -->
+<div class="modal-overlay" id="modal-activity">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div class="modal-title">📋 Activity Log</div>
+      <button class="modal-close" onclick="closeModal('modal-activity')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Lead profile card -->
+      <div class="lead-profile">
+        <div class="lp-name" id="lp-name">—</div>
+        <div class="lp-meta">
+          <div class="lp-item">📱 <b id="lp-wa">—</b></div>
+          <div class="lp-item">✉ <b id="lp-email">—</b></div>
+        </div>
+        <div><span class="lp-course" id="lp-course">—</span></div>
+        <div class="lp-actions" style="margin-top:10px">
+          <a class="act-btn act-wa" id="lp-wa-btn" href="#" target="_blank">💬 WhatsApp</a>
+          <a class="act-btn act-mail" id="lp-mail-btn" href="#">✉ Email</a>
+          <div id="lp-status-actions" style="display:contents"></div>
+        </div>
+      </div>
+
+      <!-- Add note -->
+      <div class="add-note-box">
+        <div class="section-label">Add Activity Note</div>
+        <textarea class="note-textarea" id="new-note" placeholder="What happened? Called and discussed pricing, sent brochure, customer is interested in Psychology course, following up next week..."></textarea>
+        <div class="note-row">
+          <select class="note-type" id="note-type">
+            <option value="📞">📞 Phone Call</option>
+            <option value="💬">💬 WhatsApp</option>
+            <option value="✉">✉ Email</option>
+            <option value="📝">📝 Note</option>
+            <option value="✅">✅ Enrolled</option>
+            <option value="❌">❌ Not Interested</option>
+            <option value="🔄">🔄 Follow-up done</option>
+          </select>
+          <button class="btn-save-note" onclick="saveNote()">+ Save Note</button>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="section-label">Activity History</div>
+      <div id="timeline-wrap" style="margin-bottom:18px">
+        <div class="no-activity">No activity yet.</div>
+      </div>
+
+      <!-- Follow-up scheduler -->
+      <div class="followup-box">
+        <div class="section-label">📅 Follow-Up Schedule</div>
+        <div id="fu-list"><div style="color:var(--muted);font-size:13px">No follow-ups scheduled.</div></div>
+        <div class="add-fu-row">
+          <div>
+            <div style="font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Date *</div>
+            <input type="date" class="fu-input" id="fu-date"/>
+          </div>
+          <div>
+            <div style="font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Note</div>
+            <input type="text" class="fu-input" id="fu-note" placeholder="e.g. Call to confirm enrollment"/>
+          </div>
+          <button class="btn-add-fu" onclick="addFollowUp()">+ Schedule</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = 'halberg2025'; // ← change this
+const SUPABASE_URL   = 'https://efbqkoohmzjkguilbjlc.supabase.co';
+const SUPABASE_ANON  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnFrb29obXpqa2d1aWxiamxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDI5MTYsImV4cCI6MjA5MzYxODkxNn0.Cc4SBA-1vJo_if3Tf6WjavBsiMLl7CpyGl8e1hgBweU';
+const H = {'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SUPABASE_ANON}`,'Content-Type':'application/json','Prefer':'return=representation'};
+
+const PER_PAGE=20;
+let allLeads=[], page=1, activeLead=null, dupLead=null, dupTimer=null;
+let statusFilter='all'; // 'all' | 'pending' | 'active' | 'rejected'
+
+// ── AUTH ──────────────────────────
+function doLogin(){
+  if(document.getElementById('pwd').value===ADMIN_PASSWORD){
+    sessionStorage.setItem('hf_admin','1');
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    loadData();
+  } else {
+    const e=document.getElementById('login-err'); e.style.display='block';
+    setTimeout(()=>e.style.display='none',2500);
+  }
+}
+function logout(){sessionStorage.removeItem('hf_admin');location.reload()}
+if(sessionStorage.getItem('hf_admin')){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadData();
+}
+
+// ── TABS ──────────────────────────
+function switchTab(tab){
+  ['leads','followups'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
+    document.getElementById('tab-btn-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='followups') loadAllFU();
+}
+
+// ── SUPABASE ──────────────────────
+async function sb(path,method='GET',body=null){
+  const opts={method,headers:H};
+  if(body) opts.body=JSON.stringify(body);
+  const res=await fetch(SUPABASE_URL+path,opts);
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`HTTP ${res.status}`)}
+  if(res.status===204) return null;
+  return res.json();
+}
+
+// ── LOAD ──────────────────────────
+async function loadData(){
+  try{
+    allLeads=await sb('/rest/v1/enquiries?select=*&order=created_at.desc');
+    document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-IN');
+    updateStats(); renderTable();
+  }catch(e){
+    document.getElementById('leads-tbody').innerHTML=`<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--red)">⚠ ${e.message}</td></tr>`;
+  }
+}
+
+// ── STATS ─────────────────────────
+function updateStats(){
+  const n=new Date();
+  const active=allLeads.filter(l=>l.status==='active');
+  const pending=allLeads.filter(l=>l.status==='pending'||!l.status);
+  const rejected=allLeads.filter(l=>l.status==='rejected');
+  const enrolled=allLeads.filter(l=>l.status==='enrolled');
+  const today=allLeads.filter(l=>new Date(l.created_at).toDateString()===n.toDateString()).length;
+
+  document.getElementById('cnt-all').textContent=allLeads.length;
+  document.getElementById('cnt-pending').textContent=pending.length;
+  document.getElementById('cnt-active').textContent=active.length;
+  document.getElementById('cnt-enrolled').textContent=enrolled.length;
+  document.getElementById('cnt-rejected').textContent=rejected.length;
+
+  const pb=document.getElementById('pending-badge');
+  pb.textContent=pending.length; pb.style.display=pending.length?'inline-flex':'none';
+
+  const cc={};active.forEach(l=>{if(l.course_interest)cc[l.course_interest]=(cc[l.course_interest]||0)+1});
+  const top=Object.entries(cc).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('s-total').textContent=active.length;
+  document.getElementById('s-pending').textContent=pending.length;
+  document.getElementById('s-enrolled').textContent=enrolled.length;
+  document.getElementById('s-today').textContent=today;
+  document.getElementById('dash-sub').textContent=`${active.length} active · ${pending.length} pending · ${enrolled.length} enrolled · ${new Date().toLocaleTimeString('en-IN')}`;
+
+  // 1. Course breakdown
+  const sorted=Object.entries(cc).sort((a,b)=>b[1]-a[1]),max=sorted[0]?.[1]||1;
+  document.getElementById('course-breakdown').innerHTML=sorted.length?sorted.map(([n,c])=>`
+    <div class="course-row"><div class="course-name" title="${n}">${n}</div>
+    <div class="course-bar-wrap"><div class="course-bar" style="width:${Math.round(c/max*100)}%"></div></div>
+    <div class="course-count">${c}</div></div>`).join(''):'<div style="color:var(--muted);font-size:13px">No active leads yet</div>';
+
+  // 2. Conversion funnel
+  const total=allLeads.length||1;
+  const funnelSteps=[
+    {label:'Total Enquiries',count:allLeads.length,color:'rgba(212,168,67,.6)'},
+    {label:'Active Leads',count:active.length,color:'rgba(46,204,113,.6)'},
+    {label:'Pending Review',count:pending.length,color:'rgba(212,168,67,.4)'},
+    {label:'Rejected',count:rejected.length,color:'rgba(231,76,60,.4)'},
+  ];
+  document.getElementById('funnel-breakdown').innerHTML=funnelSteps.map(s=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="color:var(--muted)">${s.label}</span>
+        <span style="font-weight:700;color:white">${s.count}</span>
+      </div>
+      <div style="height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${Math.round(s.count/allLeads.length*100)||0}%;background:${s.color};border-radius:4px;transition:width .8s"></div>
+      </div>
+    </div>`).join('');
+
+  // 3. Today's new leads
+  const todayLeads=allLeads.filter(l=>new Date(l.created_at).toDateString()===n.toDateString());
+  document.getElementById('today-breakdown').innerHTML=todayLeads.length?todayLeads.map(l=>{
+    const st=l.status||'pending';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:white">${esc(l.first_name)} ${esc(l.last_name||'')}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(l.course_interest||'No course')}</div>
+      </div>
+      ${getBadge(st)}
+      ${st==='pending'?`<button class="act-btn act-approve" style="padding:4px 8px;font-size:10px" data-tip="Approve" onclick="setStatus('${l.id}','active')">✓</button>`:''}
+      ${st==='active'?`<button class="act-btn" style="padding:4px 8px;font-size:10px;background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25)" data-tip="Mark Enrolled" onclick="setStatus('${l.id}','enrolled')">🎓</button>`:''}
+      <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" data-tip="Activity Log" onclick="openActivityModal('${l.id}')">📋</button>
+    </div>`;
+  }).join(''):'<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No new leads today</div>';
+
+  // 4. Upcoming follow-ups — load async
+  loadUpcomingFU();
+}
+
+async function loadUpcomingFU(){
+  try{
+    const fus=await sb('/rest/v1/follow_ups?done=eq.false&order=scheduled_date.asc&limit=5&select=*,enquiries(id,first_name,last_name,whatsapp)');
+    if(!fus||!fus.length){document.getElementById('upcoming-breakdown').innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No upcoming follow-ups 🎉</div>';return}
+    const today=new Date().toISOString().slice(0,10);
+    document.getElementById('upcoming-breakdown').innerHTML=fus.map(fu=>{
+      const e=fu.enquiries||{};
+      const overdue=fu.scheduled_date<today;
+      const isToday=fu.scheduled_date===today;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:white">${esc(e.first_name||'')} ${esc(e.last_name||'')}</div>
+          <div style="font-size:11px;color:${overdue?'var(--red)':isToday?'var(--gold)':'var(--muted)'}">${fmtDate(fu.scheduled_date)}${overdue?' ⚠':isToday?' · TODAY':''}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.3)">${esc(fu.note||'Follow-up')}</div>
+        </div>
+        <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" onclick="openActivityModal('${e.id}')">📋</button>
+      </div>`;
+    }).join('');
+  }catch(e){document.getElementById('upcoming-breakdown').innerHTML='<div style="color:var(--muted);font-size:13px">—</div>'}
+}
+
+// ── STATUS FILTER ─────────────────
+function setStatusFilter(status, el){
+  statusFilter=status;
+  document.querySelectorAll('.s-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  page=1; renderTable();
+}
+
+// ── TABLE ─────────────────────────
+function filtered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const c=document.getElementById('filter-course').value;
+  return allLeads.filter(l=>{
+    const st=l.status||'pending';
+    const matchS=statusFilter==='all'||st===statusFilter;
+    const matchQ=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message].some(v=>v&&v.toLowerCase().includes(q));
+    return matchS&&matchQ&&(!c||l.course_interest===c);
+  });
+}
+
+function renderTable(){
+  const leads=filtered(),total=leads.length,pages=Math.ceil(total/PER_PAGE)||1;
+  page=Math.min(page,pages);
+  const slice=leads.slice((page-1)*PER_PAGE,page*PER_PAGE);
+  document.getElementById('leads-count').textContent=`${total} lead${total!==1?'s':''}`;
+  if(!slice.length){
+    document.getElementById('leads-tbody').innerHTML=`<tr><td colspan="10"><div class="empty"><div class="empty-ico">📭</div><div>No leads found</div></div></td></tr>`;
+    document.getElementById('page-info').textContent='';document.getElementById('page-btns').innerHTML='';return;
+  }
+  document.getElementById('leads-tbody').innerHTML=slice.map((l,i)=>{
+    const num=(page-1)*PER_PAGE+i+1;
+    const date=new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const waNum=(l.whatsapp||'').replace(/\D/g,'');
+    const waLink=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up on your Halberg Fin enquiry about ${l.course_interest||'our courses'}. When is a good time to connect?`)}`;
+    const mailLink=l.email?`mailto:${l.email}?subject=Your Halberg Fin Enquiry&body=Hi ${l.first_name},`:'';
+    const st=l.status||'pending';
+    const badge=getBadge(st);
+    const approveBtn=st!=='active'?`<button class="act-btn act-approve" data-tip="Approve this lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','active')" title="Approve">✓</button>`:'';
+    const rejectBtn=st!=='rejected'?`<button class="act-btn act-reject" data-tip="Reject as spam" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')" title="Reject">✗</button>`:'';
+    const enrollBtn=st==='active'?`<button class="act-btn" style="background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25);" data-tip="Mark as Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>`:'';
+    const restoreBtn=st==='rejected'?`<button class="act-btn act-restore" data-tip="Restore to pending" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','pending')" title="Restore">↩</button>`:'';
+    return `<tr class="row-${st}">
+      <td style="color:var(--muted);font-size:11px">${num}</td>
+      <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div>${badge}</td>
+      <td><div class="td-wa">${esc(l.whatsapp||'—')}</div></td>
+      <td><div class="td-email">${esc(l.email||'—')}</div></td>
+      <td><span class="td-course">${esc(l.course_interest||'—')}</span></td>
+      <td><div class="td-exp">${esc((l.experience||'—').split('—')[0].trim())}</div></td>
+      <td><div class="td-msg" title="${esc(l.message||'')}">${esc(l.message||'—')}</div></td>
+      <td><div class="td-date">${date}</div></td>
+      <td><div class="td-actions">
+        ${approveBtn}${enrollBtn}${rejectBtn}${restoreBtn}
+        <a class="act-btn act-wa" data-tip="Open WhatsApp chat" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
+        ${l.email?`<a class="act-btn act-mail" data-tip="Send email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
+        <button class="act-btn act-log" data-tip="View activity log & follow-ups" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('page-info').textContent=`Page ${page} of ${pages} · ${slice.length} of ${total}`;
+  const btns=[];
+  btns.push(`<button class="page-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹</button>`);
+  for(let p=1;p<=pages;p++){
+    if(pages<=7||p===1||p===pages||Math.abs(p-page)<=1)btns.push(`<button class="page-btn ${p===page?'active':''}" onclick="goPage(${p})">${p}</button>`);
+    else if(Math.abs(p-page)===2)btns.push(`<span style="color:var(--muted);padding:0 4px">…</span>`);
+  }
+  btns.push(`<button class="page-btn" onclick="goPage(${page+1})" ${page>=pages?'disabled':''}>›</button>`);
+  document.getElementById('page-btns').innerHTML=btns.join('');
+}
+function goPage(p){page=p;renderTable();window.scrollTo({top:0,behavior:'smooth'})}
+
+function getBadge(st){
+  if(st==='active') return '<span class="badge badge-active">✅ Active</span>';
+  if(st==='enrolled') return '<span class="badge badge-enrolled">🎓 Enrolled</span>';
+  if(st==='rejected') return '<span class="badge badge-rejected">🗑 Rejected</span>';
+  return '<span class="badge badge-pending">⏳ Pending</span>';
+}
+
+// ── SET STATUS ────────────────────
+async function setStatus(id, status){
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status});
+    const lead=allLeads.find(l=>l.id===id);
+    if(lead) lead.status=status;
+    updateStats(); renderTable();
+  }catch(e){alert('Error: '+e.message)}
+}
+
+// ── CSV ───────────────────────────
+function exportCSV(){
+  const leads=filtered(),headers=['#','Status','First Name','Last Name','Email','WhatsApp','Course','Experience','Message','Date'];
+  const rows=leads.map((l,i)=>[i+1,l.status||'pending',l.first_name||'',l.last_name||'',l.email||'',l.whatsapp||'',l.course_interest||'',l.experience||'',(l.message||'').replace(/,/g,' '),new Date(l.created_at).toLocaleString('en-IN')]);
+  const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download=`halbergfin-leads-${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+
+// ── MODALS ────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+
+// ── ADD LEAD ──────────────────────
+function openAddModal(){
+  ['a-fname','a-lname','a-email','a-wa','a-msg'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-course').value='';
+  document.getElementById('a-exp').value='';
+  showMsg('add-msg','','');
+  document.getElementById('dup-banner').classList.remove('show');
+  dupLead=null;
+  openModal('modal-add');
+}
+
+function checkDup(val){
+  clearTimeout(dupTimer);
+  document.getElementById('dup-banner').classList.remove('show');
+  dupLead=null;
+  const cc=document.getElementById('a-cc').value;
+  const full=(cc+val).replace(/\D/g,'');
+  if(!full||full.length<7) return;
+  dupTimer=setTimeout(()=>{
+    const norm=full;
+    const found=allLeads.find(l=>{
+      const ln=(l.whatsapp||'').replace(/\D/g,'');
+      return ln===norm||ln.slice(-10)===norm.slice(-10);
+    });
+    if(found){
+      dupLead=found;
+      document.getElementById('dup-name').textContent=`${found.first_name||''} ${found.last_name||''}`.trim();
+      document.getElementById('dup-detail').textContent=`Already in database · ${found.course_interest||'No course'} · Status: ${found.status||'pending'}`;
+      document.getElementById('dup-banner').classList.add('show');
+    }
+  },450);
+}
+
+function openDupLog(){
+  if(!dupLead) return;
+  closeModal('modal-add');
+  openActivityModal(dupLead.id);
+}
+
+async function submitLead(){
+  const fname=document.getElementById('a-fname').value.trim();
+  const wa=document.getElementById('a-wa').value.trim();
+  const cc=document.getElementById('a-cc').value;
+  const waRaw=document.getElementById('a-wa').value.trim();
+  const wa=cc+waRaw.replace(/^0+/,'').replace(/\D/g,'');
+  if(!fname){showMsg('add-msg','Please enter first name.','error');return}
+  if(!waRaw){showMsg('add-msg','Please enter WhatsApp number.','error');return}
+  if(dupLead){showMsg('add-msg','This number already exists. Click "View Activity Log" to add notes.','warning');return}
+  const btn=document.getElementById('add-btn');
+  btn.textContent='Saving...';btn.disabled=true;
+  try{
+    await sb('/rest/v1/enquiries','POST',{
+      first_name:fname,last_name:document.getElementById('a-lname').value.trim(),
+      email:document.getElementById('a-email').value.trim(),whatsapp:wa,
+      course_interest:document.getElementById('a-course').value,
+      experience:document.getElementById('a-exp').value,
+      message:document.getElementById('a-msg').value.trim(),
+      status:'active' // manually added leads auto-active
+    });
+    showMsg('add-msg','✓ Lead saved as Active!','success');
+    btn.textContent='Save Lead';btn.disabled=false;
+    await loadData();
+    setTimeout(()=>closeModal('modal-add'),1000);
+  }catch(e){
+    showMsg('add-msg',e.message,'error');
+    btn.textContent='Save Lead';btn.disabled=false;
+  }
+}
+
+function showMsg(id,text,type){
+  const el=document.getElementById(id);
+  el.textContent=text;el.className='form-msg'+(type?' '+type:'');
+  el.style.display=text?'block':'none';
+}
+
+// ── ACTIVITY MODAL ────────────────
+async function openActivityModal(leadId){
+  activeLead=allLeads.find(l=>l.id===leadId);
+  if(!activeLead) return;
+  const st=activeLead.status||'pending';
+  const badge=getBadge(st);
+  document.getElementById('lp-name').innerHTML=`${esc(activeLead.first_name||'')} ${esc(activeLead.last_name||'')} ${badge}`;
+  document.getElementById('lp-wa').textContent=activeLead.whatsapp||'—';
+  document.getElementById('lp-email').textContent=activeLead.email||'—';
+  document.getElementById('lp-course').textContent=activeLead.course_interest||'—';
+  const waNum=(activeLead.whatsapp||'').replace(/\D/g,'');
+  document.getElementById('lp-wa-btn').href=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${activeLead.first_name}!`)}`;
+  document.getElementById('lp-mail-btn').href=activeLead.email?`mailto:${activeLead.email}`:'#';
+
+  // Status action buttons inside modal
+  const actDiv=document.getElementById('lp-status-actions');
+  if(actDiv){
+    actDiv.innerHTML=st!=='active'&&st!=='enrolled'?`<button class="act-btn act-approve" onclick="setStatus('${activeLead.id}','active');location.reload()">✓ Approve Lead</button>`:'';
+    if(st==='active') actDiv.innerHTML+=`<button class="act-btn" style="background:rgba(139,92,246,.12);color:#a78bfa;border:1px solid rgba(139,92,246,.25)" onclick="setStatus('${activeLead.id}','enrolled');closeModal('modal-activity')">🎓 Mark Enrolled</button>`;
+    if(st!=='rejected') actDiv.innerHTML+=`<button class="act-btn act-reject" onclick="setStatus('${activeLead.id}','rejected');closeModal('modal-activity')">✗ Reject</button>`;
+    if(st==='rejected') actDiv.innerHTML+=`<button class="act-btn act-restore" onclick="setStatus('${activeLead.id}','pending');closeModal('modal-activity')">↩ Restore</button>`;
+  }
+
+  document.getElementById('new-note').value='';
+  document.getElementById('fu-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fu-note').value='';
+  openModal('modal-activity');
+  await Promise.all([loadTimeline(),loadFU()]);
+}
+
+// ── TIMELINE ──────────────────────
+async function loadTimeline(){
+  document.getElementById('timeline-wrap').innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px"><span class="spinner"></span></div>';
+  try{
+    const logs=await sb(`/rest/v1/activity_logs?enquiry_id=eq.${activeLead.id}&order=logged_at.desc&select=*`);
+    if(!logs||!logs.length){document.getElementById('timeline-wrap').innerHTML='<div class="no-activity">No activity yet. Add a note above.</div>';return}
+    document.getElementById('timeline-wrap').innerHTML=`<div class="timeline">${logs.map(log=>`
+      <div class="tl-item" id="tl-${log.id}">
+        <div class="tl-dot"></div>
+        <div class="tl-time">${new Date(log.logged_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="tl-note"><span>${esc(log.note)}</span><button class="tl-del" onclick="deleteLog('${log.id}')">🗑</button></div>
+      </div>`).join('')}</div>`;
+  }catch(e){document.getElementById('timeline-wrap').innerHTML=`<div class="no-activity" style="color:var(--red)">${e.message}</div>`}
+}
+
+async function saveNote(){
+  const text=document.getElementById('new-note').value.trim();
+  const type=document.getElementById('note-type').value;
+  if(!text||!activeLead) return;
+  const btn=document.querySelector('.btn-save-note');
+  btn.textContent='Saving...';btn.disabled=true;
+  try{
+    await sb('/rest/v1/activity_logs','POST',{enquiry_id:activeLead.id,note:`${type} ${text}`});
+    document.getElementById('new-note').value='';
+    await loadTimeline();
+  }catch(e){alert(e.message)}
+  btn.textContent='+ Save Note';btn.disabled=false;
+}
+
+async function deleteLog(id){
+  if(!confirm('Delete this note?')) return;
+  try{await sb(`/rest/v1/activity_logs?id=eq.${id}`,'DELETE');await loadTimeline()}catch(e){alert(e.message)}
+}
+
+// ── FOLLOW-UPS ────────────────────
+async function loadFU(){
+  document.getElementById('fu-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px"><span class="spinner"></span></div>';
+  try{
+    const fus=await sb(`/rest/v1/follow_ups?enquiry_id=eq.${activeLead.id}&order=scheduled_date.desc&select=*`);
+    renderFUList(fus||[]);
+  }catch(e){document.getElementById('fu-list').innerHTML=`<div style="color:var(--red);font-size:13px">${e.message}</div>`}
+}
+
+function renderFUList(fus){
+  if(!fus.length){document.getElementById('fu-list').innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px 0">No follow-ups scheduled.</div>';return}
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('fu-list').innerHTML=fus.map(fu=>{
+    const overdue=!fu.done&&fu.scheduled_date<today;
+    return `<div class="fu-item ${fu.done?'fu-done':''}">
+      <div class="fu-date ${overdue?'overdue':''}">${fmtDate(fu.scheduled_date)}${overdue?' ⚠':''}</div>
+      <div class="fu-note-text">${esc(fu.note||'Follow-up')}</div>
+      <button class="fu-check ${fu.done?'checked':''}" onclick="toggleFU('${fu.id}',${fu.done})">${fu.done?'✓':''}</button>
+      <button class="fu-del" onclick="deleteFU('${fu.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+async function addFollowUp(){
+  const date=document.getElementById('fu-date').value,note=document.getElementById('fu-note').value.trim();
+  if(!date||!activeLead) return;
+  const btn=document.querySelector('.btn-add-fu');btn.textContent='...';btn.disabled=true;
+  try{
+    await sb('/rest/v1/follow_ups','POST',{enquiry_id:activeLead.id,scheduled_date:date,note:note||null});
+    document.getElementById('fu-date').value=new Date().toISOString().slice(0,10);
+    document.getElementById('fu-note').value='';
+    await loadFU();
+  }catch(e){alert(e.message)}
+  btn.textContent='+ Schedule';btn.disabled=false;
+}
+async function toggleFU(id,done){try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'PATCH',{done:!done});await loadFU()}catch(e){alert(e.message)}}
+async function deleteFU(id){if(!confirm('Delete?'))return;try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'DELETE');await loadFU()}catch(e){alert(e.message)}}
+
+// ── GLOBAL FOLLOW-UPS TAB ─────────
+async function loadAllFU(){
+  document.getElementById('all-fu-wrap').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</div>';
+  try{
+    const fus=await sb('/rest/v1/follow_ups?done=eq.false&order=scheduled_date.asc&select=*,enquiries(id,first_name,last_name,whatsapp,course_interest,status)');
+    if(!fus||!fus.length){document.getElementById('all-fu-wrap').innerHTML='<div style="text-align:center;padding:48px;color:var(--muted)">🎉 No pending follow-ups!</div>';return}
+    const today=new Date().toISOString().slice(0,10);
+    const groups={};fus.forEach(fu=>{const d=fu.scheduled_date;if(!groups[d])groups[d]=[];groups[d].push(fu)});
+    document.getElementById('all-fu-wrap').innerHTML=Object.entries(groups).map(([date,items])=>`
+      <div class="fu-global-day">
+        <div class="fu-global-day-title ${date<today?'overdue':''}">${fmtDate(date)}${date<today?' — OVERDUE ⚠':date===today?' — TODAY':''}  (${items.length})</div>
+        ${items.map(fu=>{
+          const e=fu.enquiries||{};const waNum=(e.whatsapp||'').replace(/\D/g,'');
+          const st=e.status||'pending';
+          const badge=st==='active'?`<span class="badge badge-active">✅</span>`:st==='rejected'?`<span class="badge badge-rejected">🗑</span>`:`<span class="badge badge-pending">⏳</span>`;
+          return `<div class="fu-global-item">
+            <div class="fu-lead-info">
+              <div class="fu-lead-name">${esc(e.first_name||'')} ${esc(e.last_name||'')} ${badge}</div>
+              <div class="fu-lead-wa">${esc(e.whatsapp||'')}</div>
+              <div class="fu-lead-note">${esc(fu.note||'Follow-up')}</div>
+            </div>
+            <a class="act-btn act-wa" href="https://wa.me/${waNum}" target="_blank">💬 WA</a>
+            <button class="act-btn act-log" onclick="switchTab('leads');setTimeout(()=>openActivityModal('${fu.enquiries?.id}'),100)">📋 Log</button>
+            <button class="act-btn act-approve" onclick="toggleFUGlobal('${fu.id}')">✓ Done</button>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+  }catch(e){document.getElementById('all-fu-wrap').innerHTML=`<div style="color:var(--red);padding:40px;text-align:center">${e.message}</div>`}
+}
+
+async function toggleFUGlobal(id){
+  try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'PATCH',{done:true});await loadAllFU()}catch(e){alert(e.message)}
+}
+
+// ── UTILS ─────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+</script>
+</body>
 </html>
+
