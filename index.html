@@ -1654,7 +1654,16 @@ async function submitForm(btn) {
 
     setTimeout(() => {
       btn.textContent = "✓ Submitted! We'll WhatsApp you shortly.";
+      btn.style.background = '';
+      btn.style.color = '';
     }, 1500);
+
+    setTimeout(() => {
+      btn.textContent = '📩 Request Free Demo Class';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 5000);
 
   } catch(err) {
     btn.textContent = '📩 Request Free Demo Class';
