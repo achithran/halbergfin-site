@@ -1820,6 +1820,12 @@ function closeFCCDropdown(){
 
 function initFCCDropdown(){
   renderFCCList('');
+  // Event delegation — handles dynamically rendered options
+  document.getElementById('f-cc-list').addEventListener('click',function(e){
+    const opt=e.target.closest('.cc-option');
+    if(!opt) return;
+    selectFCC({iso:opt.dataset.iso,code:opt.dataset.code,name:opt.dataset.name});
+  });
   document.addEventListener('click',e=>{
     const wrap=document.getElementById('f-phone-field');
     if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
@@ -1846,7 +1852,7 @@ function renderFCCList(q){
 
 function fccOptionHTML(c){
   const sel=c.iso===fSelectedCC.iso&&c.code===fSelectedCC.code?'selected':'';
-  return '<div class="cc-option '+sel+'" onclick=\'selectFCC('+JSON.stringify(c)+')\'>'+
+  return '<div class="cc-option '+sel+'" data-iso="'+c.iso+'" data-code="'+c.code+'" data-name="'+c.name+'">'+
     '<img class="cc-opt-flag" src="https://flagcdn.com/20x15/'+c.iso+'.png" alt="'+c.iso+'" loading="lazy"/>'+
     '<span class="cc-opt-name">'+c.name+'</span>'+
     '<span class="cc-opt-code">'+c.code+'</span>'+
