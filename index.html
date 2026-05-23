@@ -1430,12 +1430,7 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
               <span class="cc-code" id="f-cc-code">+91</span>
               <span class="cc-arrow">▼</span>
             </div>
-            <div class="cc-dropdown" id="f-cc-dropdown">
-              <div class="cc-search-wrap">
-                <input class="cc-search" id="f-cc-search" type="text" placeholder="Search country..." oninput="filterFCC(this.value)" autocomplete="off"/>
-              </div>
-              <div class="cc-list" id="f-cc-list"></div>
-            </div>
+
             <input class="phone-number-input" id="f-wa" type="tel" placeholder="98765 43210" required autocomplete="tel" inputmode="tel"/>
           </div>
         </div>
@@ -1870,6 +1865,14 @@ function selectFCC(country){
 
 document.addEventListener('DOMContentLoaded',initFCCDropdown);
 
+
+<!-- Country code dropdown - appended to body to avoid overflow clipping -->
+<div class="cc-dropdown" id="f-cc-dropdown">
+  <div class="cc-search-wrap">
+    <input class="cc-search" id="f-cc-search" type="text" placeholder="Search country..." oninput="filterFCC(this.value)" autocomplete="off"/>
+  </div>
+  <div class="cc-list" id="f-cc-list"></div>
+</div>
 </body>
 </html>
 
