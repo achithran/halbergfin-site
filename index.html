@@ -1425,7 +1425,7 @@ footer{background:var(--ink2);border-top:1px solid rgba(212,168,67,.1);color:rgb
         <div class="fg"><label>Email Address<span class="req">*</span></label><input id="f-email" type="email" placeholder="rajesh@gmail.com" required autocomplete="email" inputmode="email"/></div>
         <div class="fg"><label>WhatsApp Number<span class="req">*</span></label>
           <div class="phone-field" id="f-phone-field">
-            <div class="cc-trigger" id="f-cc-trigger" onclick="toggleFCCDropdown()">
+            <div class="cc-trigger" id="f-cc-trigger">
               <img class="cc-flag" id="f-cc-flag" src="https://flagcdn.com/20x15/in.png" alt="IN"/>
               <span class="cc-code" id="f-cc-code">+91</span>
               <span class="cc-arrow">▼</span>
@@ -1802,7 +1802,9 @@ function positionFCCDropdown(){
 function toggleFCCDropdown(){
   const dd=document.getElementById('f-cc-dropdown');
   if(dd.style.display==='flex'){closeFCCDropdown();return;}
-  positionFCCDropdown();
+  const rect=document.getElementById('f-cc-trigger').getBoundingClientRect();
+  dd.style.top=(rect.bottom+6)+'px';
+  dd.style.left=rect.left+'px';
   dd.style.display='flex';
   document.getElementById('f-cc-search').value='';
   renderFCCList('');
@@ -1815,7 +1817,10 @@ function closeFCCDropdown(){
 
 function initFCCDropdown(){
   renderFCCList('');
-  // Event delegation — handles dynamically rendered options
+  // Wire trigger click via addEventListener (more reliable than onclick attr)
+  const trigger=document.getElementById('f-cc-trigger');
+  if(trigger) trigger.addEventListener('click',function(e){e.stopPropagation();toggleFCCDropdown();});
+  // Event delegation for options
   document.getElementById('f-cc-list').addEventListener('click',function(e){
     const opt=e.target.closest('.cc-option');
     if(!opt) return;
