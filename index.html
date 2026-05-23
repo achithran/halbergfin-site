@@ -771,9 +771,9 @@ section{padding:110px 5%}
 .cm-arrow{margin-left:auto;color:var(--gold);font-size:20px}
 
 .cf-wrap{background:var(--ink);border-radius:24px;padding:40px;position:relative;overflow:visible}
-.cf-wrap::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 65%);border-radius:50%;pointer-events:none;z-index:0}
-/* ── CUSTOM PHONE DROPDOWN ── */
-.phone-field{position:relative;display:flex;border:1px solid rgba(212,168,67,.14);border-radius:9px;overflow:visible;background:rgba(255,255,255,.05);transition:border-color .25s;z-index:2}
+.cf-wrap::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 65%);border-radius:50%;pointer-events:none}
+/* ── PHONE DROPDOWN ── */
+.phone-field{position:relative;display:flex;border:1px solid rgba(212,168,67,.14);border-radius:9px;overflow:visible;background:rgba(255,255,255,.05);transition:border-color .25s}
 .phone-field:focus-within{border-color:rgba(212,168,67,.45)}
 .cc-trigger{display:flex;align-items:center;gap:6px;padding:11px 10px;cursor:pointer;border-right:1px solid rgba(212,168,67,.14);min-width:88px;user-select:none;flex-shrink:0;transition:background .2s;border-radius:9px 0 0 9px}
 .cc-trigger:hover{background:rgba(255,255,255,.08)}
@@ -782,23 +782,22 @@ section{padding:110px 5%}
 .cc-arrow{font-size:8px;color:rgba(212,168,67,.5);margin-left:auto}
 .phone-number-input{flex:1;background:transparent;border:none;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;width:100%;min-width:0}
 .phone-number-input::placeholder{color:rgba(255,255,255,.2)}
-/* Fixed — escapes ALL parent overflow:hidden and stacking contexts */
-.cc-dropdown{position:fixed;width:290px;background:#0d1422;border:1px solid rgba(212,168,67,.25);border-radius:12px;z-index:999999;box-shadow:0 24px 64px rgba(0,0,0,.85);display:none;flex-direction:column;overflow:hidden}
+.cc-dropdown{position:fixed;width:290px;background:#1a2035;border:2px solid rgba(212,168,67,.5);border-radius:12px;z-index:999999;box-shadow:0 24px 64px rgba(0,0,0,.95),0 0 0 1px rgba(0,0,0,.8);display:none;flex-direction:column;overflow:hidden}
 .cc-dropdown.open{display:flex}
-.cc-search-wrap{padding:10px;border-bottom:1px solid rgba(255,255,255,.06)}
-.cc-search{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px 12px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none}
-.cc-search::placeholder{color:rgba(255,255,255,.25)}
-.cc-search:focus{border-color:rgba(212,168,67,.45)}
-.cc-list{max-height:220px;overflow-y:auto}
+.cc-search-wrap{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);background:#1a2035}
+.cc-search{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:8px 12px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none}
+.cc-search::placeholder{color:rgba(255,255,255,.3)}
+.cc-search:focus{border-color:rgba(212,168,67,.5)}
+.cc-list{max-height:230px;overflow-y:auto;background:#1a2035}
 .cc-list::-webkit-scrollbar{width:3px}
-.cc-list::-webkit-scrollbar-thumb{background:rgba(212,168,67,.3);border-radius:3px}
-.cc-option{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .15s}
-.cc-option:hover{background:rgba(212,168,67,.08)}
-.cc-option.selected{background:rgba(212,168,67,.12)}
+.cc-list::-webkit-scrollbar-thumb{background:rgba(212,168,67,.4);border-radius:3px}
+.cc-option{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .15s;background:#1a2035}
+.cc-option:hover{background:#243050}
+.cc-option.selected{background:#1e2d4a}
 .cc-opt-flag{width:22px;height:15px;border-radius:2px;object-fit:cover;flex-shrink:0}
-.cc-opt-name{flex:1;color:rgba(255,255,255,.75);font-size:12px}
-.cc-opt-code{color:rgba(212,168,67,.7);font-size:12px;font-weight:600}
-.cc-divider{font-size:9px;font-weight:700;color:rgba(212,168,67,.35);letter-spacing:2px;text-transform:uppercase;padding:8px 14px 4px;border-top:1px solid rgba(255,255,255,.05)}
+.cc-opt-name{flex:1;color:rgba(255,255,255,.85);font-size:12px}
+.cc-opt-code{color:#d4a843;font-size:12px;font-weight:700}
+.cc-divider{font-size:9px;font-weight:700;color:#d4a843;letter-spacing:2px;text-transform:uppercase;padding:8px 14px 4px;border-top:1px solid rgba(255,255,255,.06);background:#131c30}
 .cf-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--gold2);margin-bottom:24px;position:relative;z-index:1}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:13px;position:relative;z-index:1}
@@ -1768,10 +1767,8 @@ const F_COUNTRIES=[
   {code:'+65',iso:'sg',name:'Singapore'},{code:'+60',iso:'my',name:'Malaysia'},
   {code:'+66',iso:'th',name:'Thailand'},{code:'+63',iso:'ph',name:'Philippines'},
   {code:'+62',iso:'id',name:'Indonesia'},{code:'+84',iso:'vn',name:'Vietnam'},
-  {code:'+855',iso:'kh',name:'Cambodia'},{code:'+95',iso:'mm',name:'Myanmar'},
   {code:'+81',iso:'jp',name:'Japan'},{code:'+82',iso:'kr',name:'South Korea'},
   {code:'+86',iso:'cn',name:'China'},{code:'+852',iso:'hk',name:'Hong Kong'},
-  {code:'+886',iso:'tw',name:'Taiwan'},
   {code:'+61',iso:'au',name:'Australia'},{code:'+64',iso:'nz',name:'New Zealand'},
   {code:'+1',iso:'us',name:'United States'},{code:'+1',iso:'ca',name:'Canada'},
   {code:'+52',iso:'mx',name:'Mexico'},
@@ -1779,19 +1776,15 @@ const F_COUNTRIES=[
   {code:'+57',iso:'co',name:'Colombia'},{code:'+56',iso:'cl',name:'Chile'},
   {code:'+44',iso:'gb',name:'United Kingdom'},{code:'+49',iso:'de',name:'Germany'},
   {code:'+33',iso:'fr',name:'France'},{code:'+39',iso:'it',name:'Italy'},
-  {code:'+34',iso:'es',name:'Spain'},{code:'+351',iso:'pt',name:'Portugal'},
-  {code:'+31',iso:'nl',name:'Netherlands'},{code:'+32',iso:'be',name:'Belgium'},
-  {code:'+41',iso:'ch',name:'Switzerland'},{code:'+43',iso:'at',name:'Austria'},
-  {code:'+46',iso:'se',name:'Sweden'},{code:'+47',iso:'no',name:'Norway'},
-  {code:'+45',iso:'dk',name:'Denmark'},{code:'+358',iso:'fi',name:'Finland'},
-  {code:'+353',iso:'ie',name:'Ireland'},{code:'+30',iso:'gr',name:'Greece'},
-  {code:'+48',iso:'pl',name:'Poland'},{code:'+7',iso:'ru',name:'Russia'},
-  {code:'+380',iso:'ua',name:'Ukraine'},{code:'+40',iso:'ro',name:'Romania'},
+  {code:'+34',iso:'es',name:'Spain'},{code:'+31',iso:'nl',name:'Netherlands'},
+  {code:'+41',iso:'ch',name:'Switzerland'},{code:'+46',iso:'se',name:'Sweden'},
+  {code:'+47',iso:'no',name:'Norway'},{code:'+45',iso:'dk',name:'Denmark'},
+  {code:'+358',iso:'fi',name:'Finland'},{code:'+353',iso:'ie',name:'Ireland'},
+  {code:'+7',iso:'ru',name:'Russia'},{code:'+380',iso:'ua',name:'Ukraine'},
   {code:'+27',iso:'za',name:'South Africa'},{code:'+234',iso:'ng',name:'Nigeria'},
   {code:'+254',iso:'ke',name:'Kenya'},{code:'+233',iso:'gh',name:'Ghana'},
-  {code:'+255',iso:'tz',name:'Tanzania'},{code:'+20',iso:'eg',name:'Egypt'},
-  {code:'+212',iso:'ma',name:'Morocco'},{code:'+213',iso:'dz',name:'Algeria'},
-  {code:'+216',iso:'tn',name:'Tunisia'},{code:'+230',iso:'mu',name:'Mauritius'},
+  {code:'+20',iso:'eg',name:'Egypt'},{code:'+212',iso:'ma',name:'Morocco'},
+  {code:'+213',iso:'dz',name:'Algeria'},{code:'+230',iso:'mu',name:'Mauritius'},
 ];
 const F_PRIORITY=['in','ae','sa','qa','bh','om','kw','jo','lb'];
 let fSelectedCC=F_COUNTRIES[0];
@@ -1800,19 +1793,15 @@ function positionFCCDropdown(){
   const trigger=document.getElementById('f-cc-trigger');
   const dd=document.getElementById('f-cc-dropdown');
   const rect=trigger.getBoundingClientRect();
-  // Open below by default, flip above if not enough space
   const spaceBelow=window.innerHeight-rect.bottom;
-  const ddH=Math.min(320,spaceBelow<280?window.innerHeight-rect.top-20:9999);
-  if(spaceBelow<280){
+  if(spaceBelow<260){
     dd.style.top='auto';
     dd.style.bottom=(window.innerHeight-rect.top+6)+'px';
   } else {
     dd.style.bottom='auto';
     dd.style.top=(rect.bottom+6)+'px';
   }
-  dd.style.left=rect.left+'px';
-  dd.style.maxHeight=Math.min(280,spaceBelow-16)+'px';
-  dd.querySelector('.cc-list').style.maxHeight=Math.min(220,spaceBelow-70)+'px';
+  dd.style.left=Math.max(4,rect.left)+'px';
 }
 
 function toggleFCCDropdown(){
@@ -1835,12 +1824,8 @@ function initFCCDropdown(){
     const wrap=document.getElementById('f-phone-field');
     if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
   });
-  window.addEventListener('scroll',()=>{
-    if(document.getElementById('f-cc-dropdown').classList.contains('open')) positionFCCDropdown();
-  },{passive:true});
-  window.addEventListener('resize',()=>{
-    if(document.getElementById('f-cc-dropdown').classList.contains('open')) positionFCCDropdown();
-  });
+  window.addEventListener('scroll',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();},{passive:true});
+  window.addEventListener('resize',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();});
 }
 
 function filterFCC(q){renderFCCList(q.toLowerCase());}
@@ -1851,26 +1836,26 @@ function renderFCCList(q){
   const filter=c=>!q||(c.name.toLowerCase().includes(q)||c.code.includes(q));
   let html='';
   const pf=priority.filter(filter),of=others.filter(filter);
-  if(pf.length&&!q) html+=`<div class="cc-divider">Middle East & India</div>`;
+  if(pf.length&&!q) html+='<div class="cc-divider">Middle East &amp; India</div>';
   html+=pf.map(c=>fccOptionHTML(c)).join('');
-  if(of.length&&!q) html+=`<div class="cc-divider">All Countries</div>`;
+  if(of.length&&!q) html+='<div class="cc-divider">All Countries</div>';
   html+=of.map(c=>fccOptionHTML(c)).join('');
-  if(!pf.length&&!of.length) html='<div style="padding:16px;text-align:center;color:rgba(255,255,255,.35);font-size:13px">No results</div>';
+  if(!pf.length&&!of.length) html='<div style="padding:16px;text-align:center;color:rgba(255,255,255,.4);font-size:13px">No results</div>';
   document.getElementById('f-cc-list').innerHTML=html;
 }
 
 function fccOptionHTML(c){
   const sel=c.iso===fSelectedCC.iso&&c.code===fSelectedCC.code?'selected':'';
-  return `<div class="cc-option ${sel}" onclick='selectFCC(${JSON.stringify(c)})'>
-    <img class="cc-opt-flag" src="https://flagcdn.com/20x15/${c.iso}.png" alt="${c.iso}" loading="lazy"/>
-    <span class="cc-opt-name">${c.name}</span>
-    <span class="cc-opt-code">${c.code}</span>
-  </div>`;
+  return '<div class="cc-option '+sel+'" onclick=\'selectFCC('+JSON.stringify(c)+')\'>'+
+    '<img class="cc-opt-flag" src="https://flagcdn.com/20x15/'+c.iso+'.png" alt="'+c.iso+'" loading="lazy"/>'+
+    '<span class="cc-opt-name">'+c.name+'</span>'+
+    '<span class="cc-opt-code">'+c.code+'</span>'+
+    '</div>';
 }
 
 function selectFCC(country){
   fSelectedCC=country;
-  document.getElementById('f-cc-flag').src=`https://flagcdn.com/20x15/${country.iso}.png`;
+  document.getElementById('f-cc-flag').src='https://flagcdn.com/20x15/'+country.iso+'.png';
   document.getElementById('f-cc-flag').alt=country.iso.toUpperCase();
   document.getElementById('f-cc-code').textContent=country.code;
   closeFCCDropdown();
@@ -1878,7 +1863,7 @@ function selectFCC(country){
 }
 
 document.addEventListener('DOMContentLoaded',initFCCDropdown);
-</script>
+
 </body>
 </html>
 
