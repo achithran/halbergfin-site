@@ -1801,16 +1801,16 @@ function positionFCCDropdown(){
 
 function toggleFCCDropdown(){
   const dd=document.getElementById('f-cc-dropdown');
-  if(dd.classList.contains('open')){closeFCCDropdown();return;}
+  if(dd.style.display==='flex'){closeFCCDropdown();return;}
   positionFCCDropdown();
-  dd.classList.add('open');
+  dd.style.display='flex';
   document.getElementById('f-cc-search').value='';
   renderFCCList('');
   setTimeout(()=>document.getElementById('f-cc-search').focus(),50);
 }
 
 function closeFCCDropdown(){
-  document.getElementById('f-cc-dropdown').classList.remove('open');
+  document.getElementById('f-cc-dropdown').style.display='none';
 }
 
 function initFCCDropdown(){
@@ -1825,8 +1825,8 @@ function initFCCDropdown(){
     const wrap=document.getElementById('f-phone-field');
     if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
   });
-  window.addEventListener('scroll',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();},{passive:true});
-  window.addEventListener('resize',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();});
+  window.addEventListener('scroll',()=>{if(document.getElementById('f-cc-dropdown').style.display==='flex')positionFCCDropdown();},{passive:true});
+  window.addEventListener('resize',()=>{if(document.getElementById('f-cc-dropdown').style.display==='flex')positionFCCDropdown();});
 }
 
 function filterFCC(q){renderFCCList(q.toLowerCase());}
@@ -1867,7 +1867,7 @@ document.addEventListener('DOMContentLoaded',initFCCDropdown);
 </script>
 
 <!-- Country dropdown -->
-<div class="cc-dropdown" id="f-cc-dropdown" style="display:none">
+<div class="cc-dropdown" id="f-cc-dropdown">
   <div class="cc-search-wrap">
     <input class="cc-search" id="f-cc-search" type="text" placeholder="Search country..." oninput="filterFCC(this.value)" autocomplete="off"/>
   </div>
