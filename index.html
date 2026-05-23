@@ -1865,9 +1865,8 @@ function selectFCC(country){
 
 document.addEventListener('DOMContentLoaded',initFCCDropdown);
 
-
-<!-- Country code dropdown - appended to body to avoid overflow clipping -->
-<div class="cc-dropdown" id="f-cc-dropdown">
+<!-- Country dropdown -->
+<div class="cc-dropdown" id="f-cc-dropdown" style="display:none">
   <div class="cc-search-wrap">
     <input class="cc-search" id="f-cc-search" type="text" placeholder="Search country..." oninput="filterFCC(this.value)" autocomplete="off"/>
   </div>
