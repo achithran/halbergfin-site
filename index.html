@@ -773,7 +773,7 @@ section{padding:110px 5%}
 .cf-wrap{background:var(--ink);border-radius:24px;padding:40px;position:relative;overflow:visible}
 .cf-wrap::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(212,168,67,.1) 0%,transparent 65%);border-radius:50%;pointer-events:none;z-index:0}
 /* ── CUSTOM PHONE DROPDOWN ── */
-.phone-field{position:relative;display:flex;border:1px solid rgba(212,168,67,.14);border-radius:9px;overflow:visible;background:rgba(255,255,255,.05);transition:border-color .25s;z-index:1}
+.phone-field{position:relative;display:flex;border:1px solid rgba(212,168,67,.14);border-radius:9px;overflow:visible;background:rgba(255,255,255,.05);transition:border-color .25s;z-index:2}
 .phone-field:focus-within{border-color:rgba(212,168,67,.45)}
 .cc-trigger{display:flex;align-items:center;gap:6px;padding:11px 10px;cursor:pointer;border-right:1px solid rgba(212,168,67,.14);min-width:88px;user-select:none;flex-shrink:0;transition:background .2s;border-radius:9px 0 0 9px}
 .cc-trigger:hover{background:rgba(255,255,255,.08)}
@@ -782,18 +782,19 @@ section{padding:110px 5%}
 .cc-arrow{font-size:8px;color:rgba(212,168,67,.5);margin-left:auto}
 .phone-number-input{flex:1;background:transparent;border:none;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;width:100%;min-width:0}
 .phone-number-input::placeholder{color:rgba(255,255,255,.2)}
-.cc-dropdown{position:fixed;width:290px;background:#0d1422;border:1px solid rgba(212,168,67,.2);border-radius:12px;z-index:99999;box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;flex-direction:column;overflow:hidden}
+/* Fixed — escapes ALL parent overflow:hidden and stacking contexts */
+.cc-dropdown{position:fixed;width:290px;background:#0d1422;border:1px solid rgba(212,168,67,.25);border-radius:12px;z-index:999999;box-shadow:0 24px 64px rgba(0,0,0,.85);display:none;flex-direction:column;overflow:hidden}
 .cc-dropdown.open{display:flex}
 .cc-search-wrap{padding:10px;border-bottom:1px solid rgba(255,255,255,.06)}
 .cc-search{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px 12px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none}
 .cc-search::placeholder{color:rgba(255,255,255,.25)}
-.cc-search:focus{border-color:rgba(212,168,67,.4)}
-.cc-list{max-height:240px;overflow-y:auto}
+.cc-search:focus{border-color:rgba(212,168,67,.45)}
+.cc-list{max-height:220px;overflow-y:auto}
 .cc-list::-webkit-scrollbar{width:3px}
 .cc-list::-webkit-scrollbar-thumb{background:rgba(212,168,67,.3);border-radius:3px}
 .cc-option{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;transition:background .15s}
 .cc-option:hover{background:rgba(212,168,67,.08)}
-.cc-option.selected{background:rgba(212,168,67,.1)}
+.cc-option.selected{background:rgba(212,168,67,.12)}
 .cc-opt-flag{width:22px;height:15px;border-radius:2px;object-fit:cover;flex-shrink:0}
 .cc-opt-name{flex:1;color:rgba(255,255,255,.75);font-size:12px}
 .cc-opt-code{color:rgba(212,168,67,.7);font-size:12px;font-weight:600}
@@ -1648,10 +1649,9 @@ async function submitForm(btn) {
   const fname  = f.fname.value.trim();
   const lname  = f.lname.value.trim();
   const email  = f.email.value.trim();
-  const wa     = f.wa.value.trim();
-  const waRaw  = wa;
+  const waRaw  = f.wa.value.trim();
   const fcc    = document.getElementById('f-cc-code') ? document.getElementById('f-cc-code').textContent : '+91';
-  const waFull = fcc + waRaw.replace(/^0+/,'').replace(/\D/g,'');
+  const wa     = fcc + waRaw.replace(/^0+/,'').replace(/\D/g,'');
   const course = f.course.value;
   const exp    = f.exp.value;
   const msg    = f.msg.value.trim();
@@ -1669,8 +1669,8 @@ async function submitForm(btn) {
                 return _showFieldError(f.email, 'Please enter a valid email address (e.g. name@example.com).');
 
   // WhatsApp — required + 8-15 digits (allows + spaces dashes)
-  if (!wa)     return _showFieldError(f.wa, 'Please enter your WhatsApp number.');
-  const waDigits = wa.replace(/\D/g, '');
+  if (!waRaw)  return _showFieldError(f.wa, 'Please enter your WhatsApp number.');
+  const waDigits = waRaw.replace(/\D/g, '');
   if (waDigits.length < WA_DIGITS_MIN || waDigits.length > WA_DIGITS_MAX)
                 return _showFieldError(f.wa, 'Please enter a valid WhatsApp number (8–15 digits).');
 
@@ -1687,7 +1687,7 @@ async function submitForm(btn) {
     const res = await fetch('/api/enquiry', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ first_name:fname, last_name:lname, email, whatsapp:waFull, course_interest:course, experience:exp, message:msg })
+      body: JSON.stringify({ first_name:fname, last_name:lname, email, whatsapp:wa, course_interest:course, experience:exp, message:msg })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Submission failed');
@@ -1796,23 +1796,23 @@ const F_COUNTRIES=[
 const F_PRIORITY=['in','ae','sa','qa','bh','om','kw','jo','lb'];
 let fSelectedCC=F_COUNTRIES[0];
 
-function initFCCDropdown(){
-  renderFCCList('');
-  document.addEventListener('click',e=>{
-    const wrap=document.getElementById('f-phone-field');
-    if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
-  });
-  // Reposition on scroll/resize
-  window.addEventListener('scroll',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();},{passive:true});
-  window.addEventListener('resize',()=>{if(document.getElementById('f-cc-dropdown').classList.contains('open'))positionFCCDropdown();});
-}
-
 function positionFCCDropdown(){
   const trigger=document.getElementById('f-cc-trigger');
   const dd=document.getElementById('f-cc-dropdown');
   const rect=trigger.getBoundingClientRect();
-  dd.style.top=(rect.bottom+6)+'px';
+  // Open below by default, flip above if not enough space
+  const spaceBelow=window.innerHeight-rect.bottom;
+  const ddH=Math.min(320,spaceBelow<280?window.innerHeight-rect.top-20:9999);
+  if(spaceBelow<280){
+    dd.style.top='auto';
+    dd.style.bottom=(window.innerHeight-rect.top+6)+'px';
+  } else {
+    dd.style.bottom='auto';
+    dd.style.top=(rect.bottom+6)+'px';
+  }
   dd.style.left=rect.left+'px';
+  dd.style.maxHeight=Math.min(280,spaceBelow-16)+'px';
+  dd.querySelector('.cc-list').style.maxHeight=Math.min(220,spaceBelow-70)+'px';
 }
 
 function toggleFCCDropdown(){
@@ -1827,6 +1827,20 @@ function toggleFCCDropdown(){
 
 function closeFCCDropdown(){
   document.getElementById('f-cc-dropdown').classList.remove('open');
+}
+
+function initFCCDropdown(){
+  renderFCCList('');
+  document.addEventListener('click',e=>{
+    const wrap=document.getElementById('f-phone-field');
+    if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
+  });
+  window.addEventListener('scroll',()=>{
+    if(document.getElementById('f-cc-dropdown').classList.contains('open')) positionFCCDropdown();
+  },{passive:true});
+  window.addEventListener('resize',()=>{
+    if(document.getElementById('f-cc-dropdown').classList.contains('open')) positionFCCDropdown();
+  });
 }
 
 function filterFCC(q){renderFCCList(q.toLowerCase());}
