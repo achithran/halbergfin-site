@@ -1828,7 +1828,8 @@ function initFCCDropdown(){
   });
   document.addEventListener('click',e=>{
     const wrap=document.getElementById('f-phone-field');
-    if(wrap&&!wrap.contains(e.target)) closeFCCDropdown();
+    const dd=document.getElementById('f-cc-dropdown');
+    if(wrap&&!wrap.contains(e.target)&&dd&&!dd.contains(e.target)) closeFCCDropdown();
   });
   window.addEventListener('scroll',()=>{if(document.getElementById('f-cc-dropdown').style.display==='flex')positionFCCDropdown();},{passive:true});
   window.addEventListener('resize',()=>{if(document.getElementById('f-cc-dropdown').style.display==='flex')positionFCCDropdown();});
