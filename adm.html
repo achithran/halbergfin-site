@@ -352,6 +352,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="tab" id="tab-btn-enrolled" onclick="switchTab('enrolled')" data-tip-pos="bottom" data-tip="Converted and enrolled students">
       🎓 Enrolled
     </div>
+    <div class="tab" id="tab-btn-rejected" onclick="switchTab('rejected')" data-tip-pos="bottom" data-tip="Rejected leads — restore or activate">
+      🗑 Rejected
+    </div>
     <div class="tab" id="tab-btn-followups" onclick="switchTab('followups')" data-tip-pos="bottom" data-tip="All pending follow-up calls">
       📅 Follow-Ups
     </div>
@@ -402,7 +405,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
         </div>
         <div class="funnel-step">
           <div class="funnel-num" id="f-rejected">—</div>
-          <div class="funnel-lbl">Rejected</div>
+          <div class="funnel-lbl" style="cursor:pointer" onclick="switchTab('rejected')">Rejected</div>
           <div class="funnel-bar-track"><div class="funnel-bar-fill" id="fb-rejected" style="background:rgba(231,76,60,.4)"></div></div>
         </div>
       </div>
@@ -521,6 +524,47 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     </div>
   </div>
 
+
+  <!-- ═══════════════════════════════════════
+       REJECTED TAB
+  ═══════════════════════════════════════ -->
+  <div id="tab-rejected" class="main" style="display:none">
+    <div class="page-title">Rejected Leads</div>
+    <div class="page-sub">Restore, activate or edit rejected enquiries</div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-ico">🔍</span>
+        <input class="search-input" type="text" id="rejected-search" placeholder="Search rejected..." oninput="renderRejected()"/>
+      </div>
+      <select class="filter-select" id="rejected-filter-course" onchange="renderRejected()">
+        <option value="">All Courses</option>
+        <option>Beginner to Investor</option>
+        <option>Forex Trading — Basics to Advanced</option>
+        <option>Option Trading — Mind Over Markets</option>
+        <option>Trading Psychology</option>
+        <option>All 4 Courses Bundle</option>
+      </select>
+      <button class="export-btn" onclick="exportCSV('rejected')" data-tip="Export rejected as CSV">⬇ Export CSV</button>
+      <span class="leads-count" id="rejected-count"></span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Email</th><th>Course</th><th>Message</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="rejected-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span id="rejected-page-info"></span>
+        <div class="page-btns" id="rejected-page-btns"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════
        FOLLOW-UPS TAB
   ═══════════════════════════════════════ -->
@@ -533,6 +577,51 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   </div>
 
 </div><!-- /app -->
+
+<!-- EDIT LEAD MODAL -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit Lead</div>
+      <button class="modal-close" onclick="closeModal('modal-edit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-msg" id="edit-msg"></div>
+      <input type="hidden" id="e-id"/>
+      <div class="frow">
+        <div class="fg"><label>First Name *</label><input type="text" id="e-fname"/></div>
+        <div class="fg"><label>Last Name</label><input type="text" id="e-lname"/></div>
+      </div>
+      <div class="fg"><label>Email Address</label><input type="email" id="e-email"/></div>
+      <div class="fg"><label>WhatsApp Number</label><input type="tel" id="e-wa" placeholder="+91 98765 43210"/></div>
+      <div class="fg"><label>Course Interest</label>
+        <select id="e-course">
+          <option value="">Select a course</option>
+          <option>Beginner to Investor</option>
+          <option>Forex Trading — Basics to Advanced</option>
+          <option>Option Trading — Mind Over Markets</option>
+          <option>Trading Psychology</option>
+          <option>All 4 Courses Bundle</option>
+        </select>
+      </div>
+      <div class="fg"><label>Trading Experience</label>
+        <select id="e-exp">
+          <option value="">Select level</option>
+          <option>Complete Beginner — Never traded before</option>
+          <option>Beginner — Less than 1 year</option>
+          <option>Intermediate — 1 to 3 years</option>
+          <option>Experienced — 3+ years but struggling</option>
+          <option>Advanced — Want to improve psychology</option>
+        </select>
+      </div>
+      <div class="fg"><label>Notes / Message</label><textarea id="e-msg"></textarea></div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeModal('modal-edit')">Cancel</button>
+        <button class="btn-primary" id="edit-btn" onclick="saveEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ADD LEAD MODAL -->
 <div class="modal-overlay" id="modal-add">
@@ -686,13 +775,14 @@ if(sessionStorage.getItem('hf_admin')){
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
-  ['enquiries','leads','enrolled','followups'].forEach(t=>{
+  ['enquiries','leads','enrolled','rejected','followups'].forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
     document.getElementById('tab-btn-'+t).classList.toggle('active',t===tab);
   });
   if(tab==='followups') loadAllFU();
   if(tab==='leads') renderLeads();
   if(tab==='enrolled') renderEnrolled();
+  if(tab==='rejected') renderRejected();
   if(tab==='enquiries') renderEnquiries();
 }
 
@@ -818,6 +908,7 @@ function renderEnquiries(){
       <div class="enq-actions">
         <button class="act-btn act-approve" data-tip="Convert to Lead" onclick="convertToLead('${l.id}')">✓ Convert to Lead</button>
         <button class="act-btn act-reject" data-tip="Reject enquiry" onclick="setStatus('${l.id}','rejected')">✗ Reject</button>
+        <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" onclick="openEditModal('${l.id}')">✏ Edit</button>
         <a class="act-btn act-wa" href="${waLink}" target="_blank" data-tip="Open WhatsApp">💬 WhatsApp</a>
         ${l.email?`<a class="act-btn act-mail" href="mailto:${l.email}?subject=Your Halberg Fin Enquiry" data-tip="Send email">✉ Email</a>`:''}
       </div>
@@ -864,6 +955,7 @@ function renderLeadRow(l,num){
     <td><div class="td-actions">
       <button class="act-btn act-enroll" data-tip="Mark Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>
       <button class="act-btn act-reject" data-tip="Reject lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')">✗</button>
+      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="event.stopPropagation();openEditModal('${l.id}')">✏</button>
       <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
       ${l.email?`<a class="act-btn act-mail" data-tip="Email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
       <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
@@ -896,6 +988,7 @@ function renderEnrolledRow(l,num){
     <td><div class="td-actions">
       <a class="act-btn act-wa" href="https://wa.me/${waNum}" target="_blank">💬</a>
       <button class="act-btn act-log" onclick="openActivityModal('${l.id}')">📋</button>
+      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')">✏</button>
       <button class="act-btn act-restore" data-tip="Move back to leads" data-tip-pos="left" onclick="setStatus('${l.id}','active')">↩</button>
     </div></td>
   </tr>`;
@@ -926,6 +1019,7 @@ function renderPaginatedTable(name,leads,page,setPage,rowFn,tbodyId,pageInfoId,p
 function goPage(name,p){
   if(name==='leads'){leadsPage=p;renderLeads();}
   else if(name==='enrolled'){enrolledPage=p;renderEnrolled();}
+  else if(name==='rejected'){rejectedPage=p;renderRejected();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -935,7 +1029,7 @@ async function setStatus(id,status){
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status});
     const lead=allLeads.find(l=>l.id===id);
     if(lead) lead.status=status;
-    updateStats();renderEnquiries();renderLeads();renderEnrolled();
+    updateStats();renderEnquiries();renderLeads();renderEnrolled();renderRejected();
   }catch(e){alert('Error: '+e.message)}
 }
 
@@ -1107,6 +1201,96 @@ async function loadAllFU(){
   }catch(e){document.getElementById('all-fu-wrap').innerHTML=`<div style="color:var(--red);padding:40px;text-align:center">${e.message}</div>`}
 }
 async function toggleFUGlobal(id){try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'PATCH',{done:true});await loadAllFU()}catch(e){alert(e.message)}}
+
+// ── RENDER REJECTED TABLE ─────────────────────────
+let rejectedPage=1;
+function renderRejected(){
+  const q=(document.getElementById('rejected-search').value||'').toLowerCase();
+  const c=document.getElementById('rejected-filter-course').value;
+  const leads=allLeads.filter(l=>{
+    if(l.status!=='rejected') return false;
+    const mq=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.message].some(v=>v&&v.toLowerCase().includes(q));
+    return mq&&(!c||l.course_interest===c);
+  });
+  renderPaginatedTable('rejected',leads,rejectedPage,(p)=>{rejectedPage=p;renderRejected();},renderRejectedRow,'rejected-tbody','rejected-page-info','rejected-page-btns','rejected-count');
+}
+
+function renderRejectedRow(l,num){
+  const date=new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+  const waNum=(l.whatsapp||'').replace(/\D/g,'');
+  const waLink=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up from Halberg Fin.`)}`;
+  return `<tr class="row-rejected">
+    <td style="color:var(--muted);font-size:11px">${num}</td>
+    <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div><span class="badge badge-rejected">🗑 Rejected</span></td>
+    <td><div class="td-wa">${esc(l.whatsapp||'—')}</div></td>
+    <td><div class="td-email">${esc(l.email||'—')}</div></td>
+    <td><span class="td-course">${esc(l.course_interest||'—')}</span></td>
+    <td><div class="td-msg" title="${esc(l.message||'')}">${esc(l.message||'—')}</div></td>
+    <td><div class="td-date">${date}</div></td>
+    <td><div class="td-actions">
+      <button class="act-btn act-restore" data-tip="Restore to Enquiry" data-tip-pos="left" onclick="setStatus('${l.id}','pending')">↩ Restore</button>
+      <button class="act-btn act-approve" data-tip="Activate as Lead" data-tip-pos="left" onclick="setStatus('${l.id}','active')">✓ Activate</button>
+      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')">✏ Edit</button>
+      <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="${waLink}" target="_blank">💬</a>
+      <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="openActivityModal('${l.id}')">📋</button>
+    </div></td>
+  </tr>`;
+}
+
+// ── EDIT LEAD MODAL ───────────────────────────────
+function openEditModal(leadId){
+  const l=allLeads.find(x=>x.id===leadId);
+  if(!l) return;
+  document.getElementById('e-id').value=l.id;
+  document.getElementById('e-fname').value=l.first_name||'';
+  document.getElementById('e-lname').value=l.last_name||'';
+  document.getElementById('e-email').value=l.email||'';
+  document.getElementById('e-wa').value=l.whatsapp||'';
+  document.getElementById('e-course').value=l.course_interest||'';
+  document.getElementById('e-exp').value=l.experience||'';
+  document.getElementById('e-msg').value=l.message||'';
+  showMsg('edit-msg','','');
+  openModal('modal-edit');
+}
+
+async function saveEdit(){
+  const id=document.getElementById('e-id').value;
+  const fname=document.getElementById('e-fname').value.trim();
+  const wa=document.getElementById('e-wa').value.trim();
+  if(!fname){showMsg('edit-msg','First name is required.','error');return}
+  if(!wa){showMsg('edit-msg','WhatsApp number is required.','error');return}
+  const btn=document.getElementById('edit-btn');
+  btn.textContent='Saving...';btn.disabled=true;
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{
+      first_name:fname,
+      last_name:document.getElementById('e-lname').value.trim(),
+      email:document.getElementById('e-email').value.trim(),
+      whatsapp:wa,
+      course_interest:document.getElementById('e-course').value,
+      experience:document.getElementById('e-exp').value,
+      message:document.getElementById('e-msg').value.trim()
+    });
+    // Update local data
+    const lead=allLeads.find(l=>l.id===id);
+    if(lead){
+      lead.first_name=fname;
+      lead.last_name=document.getElementById('e-lname').value.trim();
+      lead.email=document.getElementById('e-email').value.trim();
+      lead.whatsapp=wa;
+      lead.course_interest=document.getElementById('e-course').value;
+      lead.experience=document.getElementById('e-exp').value;
+      lead.message=document.getElementById('e-msg').value.trim();
+    }
+    showMsg('edit-msg','✓ Saved successfully!','success');
+    btn.textContent='Save Changes';btn.disabled=false;
+    updateStats();renderEnquiries();renderLeads();renderEnrolled();renderRejected();
+    setTimeout(()=>closeModal('modal-edit'),1000);
+  }catch(e){
+    showMsg('edit-msg',e.message,'error');
+    btn.textContent='Save Changes';btn.disabled=false;
+  }
+}
 
 // ── UTILS ─────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
