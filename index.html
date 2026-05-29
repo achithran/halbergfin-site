@@ -1689,6 +1689,9 @@ async function submitForm(btn) {
     btn.textContent = '✓  Submitted Successfully!';
     btn.style.background = '#25d366';
     btn.style.color = 'white';
+    document.getElementById('enq-form').reset();
+    selectFCC(F_COUNTRIES[0]);
+
 
     setTimeout(() => {
       btn.textContent = "✓ Submitted! We'll WhatsApp you shortly.";
