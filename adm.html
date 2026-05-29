@@ -908,7 +908,8 @@ function renderEnquiries(){
       <div class="enq-actions">
         <button class="act-btn act-approve" data-tip="Convert to Lead" onclick="convertToLead('${l.id}')">✓ Convert to Lead</button>
         <button class="act-btn act-reject" data-tip="Reject enquiry" onclick="setStatus('${l.id}','rejected')">✗ Reject</button>
-        <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" onclick="openEditModal('${l.id}')">✏ Edit</button>
+        <button class="act-btn" style="background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)"
+ data-tip="Edit details" onclick="openEditModal('${l.id}')">✏ Edit</button>
         <a class="act-btn act-wa" href="${waLink}" target="_blank" data-tip="Open WhatsApp">💬 WhatsApp</a>
         ${l.email?`<a class="act-btn act-mail" href="mailto:${l.email}?subject=Your Halberg Fin Enquiry" data-tip="Send email">✉ Email</a>`:''}
       </div>
