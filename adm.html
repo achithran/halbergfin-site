@@ -368,6 +368,39 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .confirm-dup{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:10px;padding:12px 14px;margin-top:8px}
 .confirm-dup-name{font-size:14px;font-weight:700;color:var(--gold2)}
 .confirm-dup-meta{font-size:11px;color:rgba(212,168,67,.6);margin-top:2px}
+
+/* WORKLIST */
+.worklist-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.wl-col{background:var(--ink2);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;min-height:120px}
+.wl-col-head{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.wl-col-head span{margin-left:auto;background:rgba(255,255,255,.08);padding:2px 9px;border-radius:10px;font-size:12px}
+.wl-head-hot{color:#ff6b5a}
+.wl-head-overdue{color:var(--red)}
+.wl-head-today{color:var(--gold2)}
+.wl-head-cold{color:#7eb6ff}
+.wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.wl-item:last-child{border:none}
+.wl-info{flex:1;min-width:0}
+.wl-name{font-size:13px;font-weight:700;color:white}
+.wl-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-na{font-size:11px;color:var(--gold2);margin-top:2px}
+.wl-actions{display:flex;gap:5px;flex-shrink:0}
+.wl-empty{text-align:center;padding:24px 12px;color:var(--muted);font-size:12px}
+
+/* TEMPLATE PICKER */
+.tmpl-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.tmpl-chip{font-size:11px;font-weight:600;padding:6px 12px;border-radius:7px;background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.25);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tmpl-chip:hover{background:rgba(37,211,102,.2)}
+
+/* WA SEND MODAL */
+.wa-preview{background:#0b141a;border:1px solid rgba(37,211,102,.2);border-radius:12px;padding:16px;margin-bottom:14px}
+.wa-bubble{background:#005c4b;color:#e9edef;padding:10px 14px;border-radius:8px 8px 8px 2px;font-size:13px;line-height:1.5;white-space:pre-wrap;max-width:90%}
+.wa-edit-area{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none;resize:vertical;min-height:120px;line-height:1.6;margin-bottom:12px}
+.wa-edit-area:focus{border-color:rgba(37,211,102,.45)}
+.qlog-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:12px;border-top:1px solid var(--border)}
+.qlog-check{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
+.qlog-label{font-size:12px;color:var(--muted);cursor:pointer}
+@media(max-width:900px){.worklist-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -402,7 +435,10 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   </div>
 
   <div class="tabs">
-    <div class="tab active" id="tab-btn-enquiries" onclick="switchTab('enquiries')" data-tip-pos="bottom" data-tip="New form submissions awaiting approval">
+    <div class="tab active" id="tab-btn-today" onclick="switchTab('today')" data-tip-pos="bottom" data-tip="Your daily worklist — who to contact now">
+      ⚡ Today <span class="tab-badge" id="today-badge" style="display:none">0</span>
+    </div>
+    <div class="tab" id="tab-btn-enquiries" onclick="switchTab('enquiries')" data-tip-pos="bottom" data-tip="New form submissions awaiting approval">
       📥 Enquiries <span class="tab-badge" id="enq-badge" style="display:none">0</span>
     </div>
     <div class="tab" id="tab-btn-leads" onclick="switchTab('leads')" data-tip-pos="bottom" data-tip="Approved leads being followed up">
@@ -420,9 +456,36 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   </div>
 
   <!-- ═══════════════════════════════════════
+       TODAY — WORKLIST
+  ═══════════════════════════════════════ -->
+  <div id="tab-today" class="main">
+    <div class="page-title">Today's Worklist</div>
+    <div class="page-sub" id="today-sub">Who to contact right now — prioritised</div>
+
+    <div class="worklist-grid">
+      <div class="wl-col">
+        <div class="wl-col-head wl-head-hot">🔥 Hot Leads <span id="wl-hot-count">0</span></div>
+        <div id="wl-hot"><div class="wl-empty">No hot leads</div></div>
+      </div>
+      <div class="wl-col">
+        <div class="wl-col-head wl-head-overdue">⚠ Overdue Follow-Ups <span id="wl-overdue-count">0</span></div>
+        <div id="wl-overdue"><div class="wl-empty">Nothing overdue 🎉</div></div>
+      </div>
+      <div class="wl-col">
+        <div class="wl-col-head wl-head-today">📅 Due Today <span id="wl-today-count">0</span></div>
+        <div id="wl-today"><div class="wl-empty">Nothing due today</div></div>
+      </div>
+      <div class="wl-col">
+        <div class="wl-col-head wl-head-cold">❄ Going Cold <span id="wl-cold-count">0</span></div>
+        <div id="wl-cold"><div class="wl-empty">All leads fresh</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
        ENQUIRIES TAB — triage queue
   ═══════════════════════════════════════ -->
-  <div id="tab-enquiries" class="main">
+  <div id="tab-enquiries" class="main" style="display:none">
     <div class="page-title">Enquiries</div>
     <div class="page-sub" id="enq-sub">New form submissions awaiting your approval</div>
 
@@ -637,6 +700,31 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 
 </div><!-- /app -->
 
+<!-- WHATSAPP SEND MODAL -->
+<div class="modal-overlay" id="modal-wa">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💬 Send WhatsApp</div>
+      <button class="modal-close" onclick="closeModal('modal-wa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">To: <b id="wa-to-name" style="color:white"></b> · <span id="wa-to-num" style="color:var(--green)"></span></div>
+      <div style="font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Pick a Template</div>
+      <div class="tmpl-bar" id="wa-tmpl-bar"></div>
+      <div style="font-size:9px;font-weight:700;color:rgba(212,168,67,.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;margin-top:6px">Message</div>
+      <textarea class="wa-edit-area" id="wa-message" placeholder="Type or pick a template above..."></textarea>
+      <div class="qlog-row">
+        <input type="checkbox" class="qlog-check" id="wa-qlog" checked/>
+        <label class="qlog-label" for="wa-qlog">Log this as a 💬 WhatsApp activity automatically</label>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeModal('modal-wa')">Cancel</button>
+        <button class="btn-primary" style="background:#25d366;color:white" onclick="sendWA()">💬 Open WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT LEAD MODAL -->
 <div class="modal-overlay" id="modal-edit">
   <div class="modal">
@@ -834,10 +922,11 @@ if(sessionStorage.getItem('hf_admin')){
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
-  ['enquiries','leads','enrolled','rejected','followups'].forEach(t=>{
+  ['today','enquiries','leads','enrolled','rejected','followups'].forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
     document.getElementById('tab-btn-'+t).classList.toggle('active',t===tab);
   });
+  if(tab==='today') renderWorklist();
   if(tab==='followups') loadAllFU();
   if(tab==='leads') renderLeads();
   if(tab==='enrolled') renderEnrolled();
@@ -862,6 +951,7 @@ async function loadData(){
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-IN');
     updateStats();
     renderEnquiries();
+    renderWorklist();
     loadUpcomingFU();
     initNotifyState();
     if(notifyOn) startPolling();
@@ -1059,7 +1149,7 @@ function renderLeadRow(l,num){
       <button class="act-btn act-enroll" data-tip="Mark Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>
       <button class="act-btn act-reject" data-tip="Reject lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')">✗</button>
       <button class="act-btn act-edit" data-tip="Edit details" data-tip-pos="left" onclick="event.stopPropagation();openEditModal('${l.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
-      <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
+      <button class="act-btn act-wa" data-tip="Send WhatsApp" data-tip-pos="left" onclick="event.stopPropagation();openWAModal('${l.id}')">💬</button>
       ${l.email?`<a class="act-btn act-mail" data-tip="Email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
       <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
     </div></td>
@@ -1612,6 +1702,143 @@ function playChime(){
       osc.start(t);osc.stop(t+0.4);
     });
   }catch(e){}
+}
+
+// ── WHATSAPP TEMPLATES ────────────────────────────
+// Editable defaults. {name}, {course} auto-filled.
+const WA_TEMPLATES=[
+  {label:'👋 First Contact', text:`Hi {name}! 👋 Thanks for your interest in {course} at Halberg Fin. I'd love to tell you more and answer any questions. When would be a good time for a quick call?`},
+  {label:'📞 Follow-Up', text:`Hi {name}, just following up on your enquiry about {course}. Are you still interested? Happy to help you get started whenever you're ready! 😊`},
+  {label:'💰 Pricing', text:`Hi {name}! Here are the details for {course}. We also offer flexible EMI options and bundle discounts. Would you like me to share the full breakdown?`},
+  {label:'🎓 Demo Invite', text:`Hi {name}! We have a free live demo class coming up for {course}. It's a great way to experience our teaching style before enrolling. Shall I reserve a spot for you?`},
+  {label:'⏰ Re-engage', text:`Hi {name}, it's been a little while! Our {course} batch is filling up. I didn't want you to miss out — are you still keen to join? 🙂`},
+  {label:'💳 Payment Reminder', text:`Hi {name}! Just a gentle reminder to complete your enrolment for {course}. Let me know if you need any help with the payment process. Looking forward to having you onboard! 🎯`},
+];
+
+function fillTemplate(text,lead){
+  return text
+    .replace(/\{name\}/g,lead.first_name||'there')
+    .replace(/\{course\}/g,lead.course_interest||'our courses');
+}
+
+// ── WHATSAPP SEND MODAL ───────────────────────────
+let waModalLead=null;
+function openWAModal(leadId){
+  const lead=allLeads.find(l=>l.id===leadId);
+  if(!lead) return;
+  waModalLead=lead;
+  document.getElementById('wa-to-name').textContent=`${lead.first_name||''} ${lead.last_name||''}`.trim();
+  document.getElementById('wa-to-num').textContent=lead.whatsapp||'';
+  document.getElementById('wa-message').value='';
+  document.getElementById('wa-qlog').checked=true;
+  // Render template chips
+  document.getElementById('wa-tmpl-bar').innerHTML=WA_TEMPLATES.map((t,i)=>
+    `<span class="tmpl-chip" onclick="pickTemplate(${i})">${t.label}</span>`
+  ).join('');
+  openModal('modal-wa');
+}
+
+function pickTemplate(i){
+  if(!waModalLead) return;
+  document.getElementById('wa-message').value=fillTemplate(WA_TEMPLATES[i].text,waModalLead);
+}
+
+async function sendWA(){
+  if(!waModalLead) return;
+  const msg=document.getElementById('wa-message').value.trim();
+  const waNum=(waModalLead.whatsapp||'').replace(/\D/g,'');
+  const url=`https://wa.me/${waNum}${msg?`?text=${encodeURIComponent(msg)}`:''}`;
+  window.open(url,'_blank');
+  // Quick-log
+  if(document.getElementById('wa-qlog').checked){
+    try{
+      await sb('/rest/v1/activity_logs','POST',{enquiry_id:waModalLead.id,note:`💬 ${msg||'Sent WhatsApp message'}`});
+      waModalLead.last_contacted=new Date().toISOString();
+    }catch(e){console.error('Log error:',e);}
+  }
+  closeModal('modal-wa');
+}
+
+// ── TODAY WORKLIST ────────────────────────────────
+function renderWorklist(){
+  const today=new Date().toISOString().slice(0,10);
+  // Hot leads
+  const hot=allLeads.filter(l=>l.status==='active'&&l.priority==='hot');
+  // Going cold: active, no priority or warm, >4 days old
+  const cold=allLeads.filter(l=>{
+    if(l.status!=='active') return false;
+    const days=Math.floor((Date.now()-new Date(l.created_at).getTime())/86400000);
+    return days>4 && l.priority!=='hot';
+  });
+  renderWLCol('wl-hot','wl-hot-count',hot,'hot');
+  renderWLCol('wl-cold','wl-cold-count',cold.slice(0,10),'cold');
+  // Follow-ups (overdue + today) — async
+  loadWorklistFU(today);
+  // Badge = total actionable
+  const badge=document.getElementById('today-badge');
+  const total=hot.length+cold.length;
+  document.getElementById('today-sub').textContent=`${hot.length} hot · ${cold.length} going cold · check follow-ups below`;
+}
+
+function renderWLCol(listId,countId,leads,type){
+  document.getElementById(countId).textContent=leads.length;
+  if(!leads.length){
+    const msgs={hot:'No hot leads',cold:'All leads fresh'};
+    document.getElementById(listId).innerHTML=`<div class="wl-empty">${msgs[type]||'Nothing here'}</div>`;
+    return;
+  }
+  document.getElementById(listId).innerHTML=leads.map(l=>{
+    const days=Math.floor((Date.now()-new Date(l.created_at).getTime())/86400000);
+    return `<div class="wl-item">
+      <div class="wl-info">
+        <div class="wl-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div>
+        <div class="wl-meta">${esc(l.course_interest||'No course')} · ${days}d old</div>
+        ${l.next_action?`<div class="wl-na">→ ${esc(l.next_action)}</div>`:''}
+      </div>
+      <div class="wl-actions">
+        <button class="act-btn act-wa" data-tip="Send WhatsApp" data-tip-pos="left" onclick="openWAModal('${l.id}')">💬</button>
+        <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="openActivityModal('${l.id}')">📋</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadWorklistFU(today){
+  try{
+    const fus=await sb('/rest/v1/follow_ups?done=eq.false&order=scheduled_date.asc&select=*,enquiries(id,first_name,last_name,whatsapp,course_interest,next_action)');
+    const overdue=(fus||[]).filter(f=>f.scheduled_date<today);
+    const due=(fus||[]).filter(f=>f.scheduled_date===today);
+    renderWLFU('wl-overdue','wl-overdue-count',overdue);
+    renderWLFU('wl-today','wl-today-count',due);
+    // update badge total
+    const hot=allLeads.filter(l=>l.status==='active'&&l.priority==='hot').length;
+    const cold=allLeads.filter(l=>{if(l.status!=='active')return false;const d=Math.floor((Date.now()-new Date(l.created_at).getTime())/86400000);return d>4&&l.priority!=='hot';}).length;
+    const total=hot+cold+overdue.length+due.length;
+    const badge=document.getElementById('today-badge');
+    if(badge){badge.textContent=total;badge.style.display=total?'inline-flex':'none';}
+  }catch(e){console.error(e);}
+}
+
+function renderWLFU(listId,countId,fus){
+  document.getElementById(countId).textContent=fus.length;
+  if(!fus.length){
+    const msg=listId==='wl-overdue'?'Nothing overdue 🎉':'Nothing due today';
+    document.getElementById(listId).innerHTML=`<div class="wl-empty">${msg}</div>`;
+    return;
+  }
+  document.getElementById(listId).innerHTML=fus.map(fu=>{
+    const e=fu.enquiries||{};
+    return `<div class="wl-item">
+      <div class="wl-info">
+        <div class="wl-name">${esc(e.first_name||'')} ${esc(e.last_name||'')}</div>
+        <div class="wl-meta">${esc(fu.note||'Follow-up')} · ${fmtDate(fu.scheduled_date)}</div>
+      </div>
+      <div class="wl-actions">
+        <button class="act-btn act-wa" data-tip="Send WhatsApp" data-tip-pos="left" onclick="openWAModal('${e.id}')">💬</button>
+        <button class="act-btn act-approve" data-tip="Mark done" data-tip-pos="left" onclick="confirmFUDone('${fu.id}')">✓</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── UTILS ─────────────────────────────────────────
