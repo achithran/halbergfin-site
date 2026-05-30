@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Public anon key (safe to include — same one in the client)
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnFrb29obXpqa2d1aWxiamxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDI5MTYsImV4cCI6MjA5MzYxODkxNn0.Cc4SBA-1vJo_if3Tf6WjavBsiMLl7CpyGl8e1hgBweU';
+
 // Admin client — uses SERVICE KEY (server-side only, never exposed to browser)
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
@@ -17,12 +20,19 @@ export default async function handler(req, res) {
 
   // ── Verify the caller is a logged-in OWNER ──────────
   const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace('Bearer ', '');
+  const token = authHeader.replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
 
-  // Validate the token + check the caller's role
-  const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(token);
-  if (userErr || !userData?.user) return res.status(401).json({ error: 'Invalid session' });
+  // Validate the token by creating a client scoped to it
+  const supabaseUser = createClient(
+    process.env.SUPABASE_URL,
+    ANON_KEY,
+    { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { autoRefreshToken: false, persistSession: false } }
+  );
+  const { data: userData, error: userErr } = await supabaseUser.auth.getUser();
+  if (userErr || !userData?.user) {
+    return res.status(401).json({ error: 'Invalid session', detail: userErr?.message });
+  }
 
   const { data: callerProfile } = await supabaseAdmin
     .from('admins')
