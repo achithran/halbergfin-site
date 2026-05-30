@@ -457,6 +457,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="tab" id="tab-btn-followups" onclick="switchTab('followups')" data-tip-pos="bottom" data-tip="All pending follow-up calls">
       📅 Follow-Ups
     </div>
+    <div class="tab" id="tab-btn-admins" onclick="switchTab('admins')" data-tip-pos="bottom" data-tip="Manage team members" style="display:none">
+      👥 Team
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════
@@ -699,6 +702,29 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="page-sub">All pending follow-ups across all leads</div>
     <div id="all-fu-wrap">
       <div style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       ADMINS / TEAM TAB (owner only)
+  ═══════════════════════════════════════ -->
+  <div id="tab-admins" class="main" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+      <div>
+        <div class="page-title">Team Members</div>
+        <div class="page-sub">Add, manage and assign roles to your team</div>
+      </div>
+      <button class="tb-btn tb-add" onclick="openAddAdminModal()" style="padding:10px 18px">+ Add Team Member</button>
+    </div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="admins-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -975,6 +1001,9 @@ function showCurrentAdmin(){
   if(!currentAdmin) return;
   const el=document.getElementById('current-admin-label');
   if(el) el.textContent=`${currentAdmin.full_name||currentAdmin.email} · ${currentAdmin.role}`;
+  // Owners see the Team tab
+  const teamTab=document.getElementById('tab-btn-admins');
+  if(teamTab) teamTab.style.display=currentAdmin.role==='owner'?'block':'none';
 }
 
 async function logout(){
@@ -995,9 +1024,11 @@ async function logout(){
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
-  ['today','enquiries','leads','enrolled','rejected','followups'].forEach(t=>{
-    document.getElementById('tab-'+t).style.display=t===tab?'block':'none';
-    document.getElementById('tab-btn-'+t).classList.toggle('active',t===tab);
+  ['today','enquiries','leads','enrolled','rejected','followups','admins'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    const btn=document.getElementById('tab-btn-'+t);
+    if(el) el.style.display=t===tab?'block':'none';
+    if(btn) btn.classList.toggle('active',t===tab);
   });
   if(tab==='today') renderWorklist();
   if(tab==='followups') loadAllFU();
@@ -1005,6 +1036,7 @@ function switchTab(tab){
   if(tab==='enrolled') renderEnrolled();
   if(tab==='rejected') renderRejected();
   if(tab==='enquiries') renderEnquiries();
+  if(tab==='admins') loadAdmins();
 }
 
 // ── SUPABASE ──────────────────────────────────────
@@ -1914,6 +1946,156 @@ function renderWLFU(listId,countId,fus){
   }).join('');
 }
 
+// ── ADMIN / TEAM MANAGEMENT ───────────────────────
+let allAdmins=[];
+
+async function loadAdmins(){
+  const tb=document.getElementById('admins-tbody');
+  tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>';
+  try{
+    allAdmins=await sb('/rest/v1/admins?select=*&order=created_at.asc');
+    renderAdmins();
+  }catch(e){
+    tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderAdmins(){
+  const tb=document.getElementById('admins-tbody');
+  if(!allAdmins.length){tb.innerHTML='<tr><td colspan="6" class="empty">No team members yet</td></tr>';return;}
+  tb.innerHTML=allAdmins.map(a=>{
+    const isMe=currentAdmin&&a.id===currentAdmin.id;
+    const added=new Date(a.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+    const roleBadge=a.role==='owner'
+      ? '<span class="badge badge-enrolled">👑 Owner</span>'
+      : '<span class="badge badge-active">🧑‍💼 Agent</span>';
+    const statusBadge=a.active
+      ? '<span class="badge badge-active">● Active</span>'
+      : '<span class="badge badge-rejected">○ Inactive</span>';
+    return `<tr>
+      <td><div class="td-name">${esc(a.full_name||'—')}${isMe?' <span style="font-size:10px;color:var(--gold2)">(you)</span>':''}</div></td>
+      <td><div class="td-email">${esc(a.email)}</div></td>
+      <td>${roleBadge}</td>
+      <td>${statusBadge}</td>
+      <td><div class="td-date">${added}</div></td>
+      <td><div class="td-actions">
+        ${isMe?'<span style="font-size:11px;color:var(--muted)">—</span>':`
+          <button class="act-btn act-edit" data-tip="Reset password" data-tip-pos="left" onclick="openResetPwd('${a.id}')">🔑</button>
+          ${a.active
+            ? `<button class="act-btn act-reject" data-tip="Deactivate" data-tip-pos="left" onclick="toggleAdminActive('${a.id}',false)">⏸</button>`
+            : `<button class="act-btn act-approve" data-tip="Reactivate" data-tip-pos="left" onclick="toggleAdminActive('${a.id}',true)">▶</button>`}
+          ${a.role==='agent'
+            ? `<button class="act-btn act-enroll" data-tip="Make owner" data-tip-pos="left" onclick="changeAdminRole('${a.id}','owner')">👑</button>`
+            : `<button class="act-btn act-restore" data-tip="Make agent" data-tip-pos="left" onclick="changeAdminRole('${a.id}','agent')">🧑‍💼</button>`}
+          <button class="act-btn act-reject" data-tip="Remove" data-tip-pos="left" onclick="deleteAdmin('${a.id}','${esc(a.full_name||a.email)}')">🗑</button>
+        `}
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Call the serverless function with the owner's token
+async function adminAPI(payload){
+  const {data:{session}}=await sbClient.auth.getSession();
+  const res=await fetch('/api/create-admin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
+    body:JSON.stringify(payload)
+  });
+  const out=await res.json();
+  if(!res.ok) throw new Error(out.error||'Request failed');
+  return out;
+}
+
+function openAddAdminModal(){
+  document.getElementById('admin-modal-title').textContent='➕ Add Team Member';
+  document.getElementById('adm-id').value='';
+  document.getElementById('adm-name').value='';
+  document.getElementById('adm-email').value='';
+  document.getElementById('adm-pwd').value='';
+  document.getElementById('adm-role').value='agent';
+  document.getElementById('adm-pwd-wrap').style.display='block';
+  document.getElementById('adm-email').disabled=false;
+  document.getElementById('adm-save-btn').textContent='Create Member';
+  showMsg('admin-msg','','');
+  openModal('modal-admin');
+}
+
+async function saveAdmin(){
+  const name=document.getElementById('adm-name').value.trim();
+  const email=document.getElementById('adm-email').value.trim();
+  const pwd=document.getElementById('adm-pwd').value;
+  const role=document.getElementById('adm-role').value;
+  if(!name){showMsg('admin-msg','Full name is required.','error');return;}
+  if(!email){showMsg('admin-msg','Email is required.','error');return;}
+  if(pwd.length<6){showMsg('admin-msg','Password must be at least 6 characters.','error');return;}
+  const btn=document.getElementById('adm-save-btn');
+  btn.textContent='Creating...';btn.disabled=true;
+  try{
+    await adminAPI({action:'create',email,password:pwd,full_name:name,role});
+    showMsg('admin-msg',`✓ ${name} added! They can log in with their email and password.`,'success');
+    btn.textContent='Create Member';btn.disabled=false;
+    await loadAdmins();
+    setTimeout(()=>closeModal('modal-admin'),1400);
+  }catch(e){
+    showMsg('admin-msg',e.message,'error');
+    btn.textContent='Create Member';btn.disabled=false;
+  }
+}
+
+function openResetPwd(id){
+  const a=allAdmins.find(x=>x.id===id);if(!a)return;
+  showConfirm({
+    type:'warn',icon:'🔑',title:'Reset Password',
+    text:`Set a new password for <b>${esc(a.full_name||a.email)}</b>. Share it with them securely.`,
+    extraHTML:`<div style="margin-top:10px"><input type="text" id="reset-pwd-input" placeholder="New password (min 6 chars)" style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none"/></div>`,
+    okLabel:'Reset Password',
+    onConfirm:async()=>{
+      const pwd=document.getElementById('reset-pwd-input')?.value||'';
+      if(pwd.length<6){alert('Password must be at least 6 characters');return;}
+      try{await adminAPI({action:'reset_password',id,password:pwd});alert('Password reset successfully.');}
+      catch(e){alert(e.message);}
+    }
+  });
+}
+
+function toggleAdminActive(id,active){
+  const a=allAdmins.find(x=>x.id===id);if(!a)return;
+  showConfirm({
+    type:active?'good':'danger',icon:active?'▶':'⏸',
+    title:active?'Reactivate Member':'Deactivate Member',
+    text:active?`Reactivate <b>${esc(a.full_name||a.email)}</b>? They'll be able to log in again.`:`Deactivate <b>${esc(a.full_name||a.email)}</b>? They won't be able to log in until reactivated.`,
+    okLabel:active?'Reactivate':'Deactivate',
+    onConfirm:async()=>{
+      try{await adminAPI({action:'update',id,active});await loadAdmins();}catch(e){alert(e.message);}
+    }
+  });
+}
+
+function changeAdminRole(id,role){
+  const a=allAdmins.find(x=>x.id===id);if(!a)return;
+  showConfirm({
+    type:'info',icon:role==='owner'?'👑':'🧑‍💼',
+    title:role==='owner'?'Make Owner':'Make Agent',
+    text:role==='owner'?`Give <b>${esc(a.full_name||a.email)}</b> full owner access? They'll be able to manage the team and see all leads.`:`Change <b>${esc(a.full_name||a.email)}</b> to agent? They'll only see assigned + unassigned leads.`,
+    okLabel:'Confirm',
+    onConfirm:async()=>{
+      try{await adminAPI({action:'update',id,role});await loadAdmins();}catch(e){alert(e.message);}
+    }
+  });
+}
+
+function deleteAdmin(id,name){
+  showConfirm({
+    type:'danger',icon:'🗑',title:'Remove Team Member',
+    text:`Permanently remove <b>${esc(name)}</b>? Their login will be deleted. Leads they were assigned will become unassigned. This cannot be undone.`,
+    okLabel:'Remove',
+    onConfirm:async()=>{
+      try{await adminAPI({action:'delete',id});await loadAdmins();}catch(e){alert(e.message);}
+    }
+  });
+}
+
 // ── UTILS ─────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
@@ -2101,6 +2283,33 @@ function selectCC(country){
 // Init on load
 document.addEventListener('DOMContentLoaded',initCCDropdown);
 </script>
+<!-- ADD/EDIT ADMIN MODAL -->
+<div class="modal-overlay" id="modal-admin">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="admin-modal-title">➕ Add Team Member</div>
+      <button class="modal-close" onclick="closeModal('modal-admin')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-msg" id="admin-msg"></div>
+      <input type="hidden" id="adm-id"/>
+      <div class="fg"><label>Full Name *</label><input type="text" id="adm-name" placeholder="Henrick J"/></div>
+      <div class="fg"><label>Email *</label><input type="email" id="adm-email" placeholder="henrick@halbergfin.com" autocomplete="off"/></div>
+      <div class="fg" id="adm-pwd-wrap"><label>Password * <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(min 6 chars — share this with them)</span></label><input type="text" id="adm-pwd" placeholder="Set an initial password" autocomplete="off"/></div>
+      <div class="fg"><label>Role *</label>
+        <select id="adm-role">
+          <option value="agent">Agent — sees assigned + unassigned leads</option>
+          <option value="owner">Owner — full access, manages team</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="closeModal('modal-admin')">Cancel</button>
+        <button class="btn-primary" id="adm-save-btn" onclick="saveAdmin()">Create Member</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM MODAL -->
 <div class="confirm-overlay" id="confirm-modal">
   <div class="confirm-box">
