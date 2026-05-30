@@ -402,6 +402,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .qlog-label{font-size:12px;color:var(--muted);cursor:pointer}
 @media(max-width:900px){.worklist-grid{grid-template-columns:1fr}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -410,10 +411,12 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   <div class="login-box">
     <div class="login-logo">HALBERG FIN</div>
     <div class="login-sub">Admin Dashboard</div>
+    <label class="login-label">Email</label>
+    <input class="login-input" type="email" id="login-email" placeholder="you@halbergfin.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()"/>
     <label class="login-label">Password</label>
-    <input class="login-input" type="password" id="pwd" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="login-btn" onclick="doLogin()">→ Sign In</button>
-    <div class="login-err" id="login-err">Incorrect password</div>
+    <input class="login-input" type="password" id="login-pwd" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">→ Sign In</button>
+    <div class="login-err" id="login-err">Incorrect email or password</div>
   </div>
 </div>
 
@@ -426,6 +429,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <span class="tb-sub">/ Admin</span>
     </div>
     <div class="tb-right">
+      <span id="current-admin-label" style="font-size:11px;color:var(--gold2);font-weight:600"></span>
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
       <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="New-lead alerts">🔔 Off</button>
       <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
@@ -892,33 +896,102 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 </div>
 
 <script>
-const ADMIN_PASSWORD='halberg2025';
 const SUPABASE_URL='https://efbqkoohmzjkguilbjlc.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnFrb29obXpqa2d1aWxiamxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDI5MTYsImV4cCI6MjA5MzYxODkxNn0.Cc4SBA-1vJo_if3Tf6WjavBsiMLl7CpyGl8e1hgBweU';
-const H={'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SUPABASE_ANON}`,'Content-Type':'application/json','Prefer':'return=representation'};
+
+// Supabase Auth client
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Current logged-in admin profile (from admins table)
+let currentAdmin = null;
+
+// Headers builder — uses the logged-in user's access token (drives RLS)
+let _accessToken = SUPABASE_ANON;
+function H_(){
+  return {'apikey':SUPABASE_ANON,'Authorization':`Bearer ${_accessToken}`,'Content-Type':'application/json','Prefer':'return=representation'};
+}
+// Back-compat: many functions reference H directly
+let H = H_();
 
 const PER_PAGE=20;
 let allLeads=[], leadsPage=1, enrolledPage=1;
 let activeLead=null, dupLead=null, dupTimer=null;
 
-// ── AUTH ──────────────────────────────────────────
-function doLogin(){
-  if(document.getElementById('pwd').value===ADMIN_PASSWORD){
-    sessionStorage.setItem('hf_admin','1');
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    loadData();
-  } else {
-    const e=document.getElementById('login-err');e.style.display='block';
-    setTimeout(()=>e.style.display='none',2500);
+// ── AUTH (Supabase) ───────────────────────────────
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pwd=document.getElementById('login-pwd').value;
+  const errEl=document.getElementById('login-err');
+  const btn=document.getElementById('login-btn');
+  if(!email||!pwd){errEl.textContent='Enter email and password';errEl.style.display='block';return;}
+  btn.textContent='Signing in...';btn.disabled=true;
+  try{
+    const {data,error}=await sbClient.auth.signInWithPassword({email,password:pwd});
+    if(error) throw error;
+    await onAuthSuccess(data.session);
+  }catch(e){
+    errEl.textContent=e.message||'Incorrect email or password';
+    errEl.style.display='block';
+    setTimeout(()=>errEl.style.display='none',3500);
+    btn.textContent='→ Sign In';btn.disabled=false;
   }
 }
-function logout(){sessionStorage.removeItem('hf_admin');location.reload()}
-if(sessionStorage.getItem('hf_admin')){
+
+async function onAuthSuccess(session){
+  _accessToken=session.access_token;
+  H=H_();
+  // Fetch admin profile
+  try{
+    const profile=await sb(`/rest/v1/admins?id=eq.${session.user.id}&select=*`);
+    if(!profile||!profile.length){
+      // Authenticated but not in admins table → deny
+      await sbClient.auth.signOut();
+      const errEl=document.getElementById('login-err');
+      errEl.textContent='Account not authorised. Contact the owner.';
+      errEl.style.display='block';
+      const btn=document.getElementById('login-btn');btn.textContent='→ Sign In';btn.disabled=false;
+      return;
+    }
+    currentAdmin=profile[0];
+    if(!currentAdmin.active){
+      await sbClient.auth.signOut();
+      const errEl=document.getElementById('login-err');
+      errEl.textContent='Your account is deactivated.';
+      errEl.style.display='block';
+      const btn=document.getElementById('login-btn');btn.textContent='→ Sign In';btn.disabled=false;
+      return;
+    }
+  }catch(e){
+    console.error('Profile load error:',e);
+  }
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  const btn=document.getElementById('login-btn');if(btn){btn.textContent='→ Sign In';btn.disabled=false;}
+  showCurrentAdmin();
   loadData();
 }
+
+function showCurrentAdmin(){
+  if(!currentAdmin) return;
+  const el=document.getElementById('current-admin-label');
+  if(el) el.textContent=`${currentAdmin.full_name||currentAdmin.email} · ${currentAdmin.role}`;
+}
+
+async function logout(){
+  try{await sbClient.auth.signOut();}catch(e){}
+  currentAdmin=null;_accessToken=SUPABASE_ANON;
+  location.reload();
+}
+
+// Auto-restore session on page load
+(async function restoreSession(){
+  try{
+    const {data}=await sbClient.auth.getSession();
+    if(data&&data.session){
+      await onAuthSuccess(data.session);
+    }
+  }catch(e){console.error('Session restore error:',e);}
+})();
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
@@ -936,7 +1009,7 @@ function switchTab(tab){
 
 // ── SUPABASE ──────────────────────────────────────
 async function sb(path,method='GET',body=null){
-  const opts={method,headers:H};
+  const opts={method,headers:H_()};
   if(body) opts.body=JSON.stringify(body);
   const res=await fetch(SUPABASE_URL+path,opts);
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||`HTTP ${res.status}`)}
