@@ -62,6 +62,24 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .days-fresh{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
 .days-warn{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
 .days-cold{background:rgba(231,76,60,.1);color:var(--red);border:1px solid rgba(231,76,60,.3)}
+/* PRIORITY PILLS */
+.prio-wrap{display:flex;gap:3px}
+.prio-pill{font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;cursor:pointer;border:1px solid transparent;opacity:.35;transition:all .15s;user-select:none}
+.prio-pill:hover{opacity:.7}
+.prio-pill.active{opacity:1}
+.prio-hot{background:rgba(231,76,60,.12);color:#ff6b5a;border-color:rgba(231,76,60,.3)}
+.prio-warm{background:rgba(212,168,67,.12);color:var(--gold2);border-color:rgba(212,168,67,.3)}
+.prio-cold{background:rgba(96,165,250,.12);color:#7eb6ff;border-color:rgba(96,165,250,.3)}
+/* NEXT ACTION */
+.next-action{display:flex;align-items:center;gap:6px}
+.na-text{font-size:12px;color:var(--gold2);cursor:pointer;border-bottom:1px dashed rgba(212,168,67,.3);padding:2px 0;min-width:40px}
+.na-text.empty{color:rgba(255,255,255,.25);font-style:italic;border-bottom-color:rgba(255,255,255,.1)}
+.na-text:hover{border-bottom-color:var(--gold)}
+.na-input{background:rgba(255,255,255,.06);border:1px solid rgba(212,168,67,.4);border-radius:6px;padding:5px 8px;font-family:'Satoshi',sans-serif;font-size:12px;color:white;outline:none;width:150px}
+/* Row priority left border */
+tbody tr.prio-row-hot{border-left:3px solid #e74c3c}
+tbody tr.prio-row-warm{border-left:3px solid var(--gold)}
+tbody tr.prio-row-cold{border-left:3px solid #60a5fa}
 .tb-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s;border:1px solid var(--border);letter-spacing:.3px}
 .tb-refresh{background:rgba(212,168,67,.1);color:var(--gold)}.tb-refresh:hover{background:rgba(212,168,67,.2)}
 .tb-add{background:var(--gold);color:var(--ink);border-color:var(--gold)}.tb-add:hover{background:var(--gold2)}
@@ -512,7 +530,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Email</th><th>Course</th><th>Experience</th><th>Message</th><th>Date</th><th>Actions</th></tr>
+          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Course</th><th>Priority</th><th>Next Action</th><th>Date</th><th>Actions</th></tr>
         </thead>
         <tbody id="leads-tbody">
           <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
@@ -1002,25 +1020,40 @@ function renderLeads(){
   const c=document.getElementById('leads-filter-course').value;
   const leads=allLeads.filter(l=>{
     if(l.status!=='active') return false;
-    const mq=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message].some(v=>v&&v.toLowerCase().includes(q));
+    const mq=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message,l.next_action].some(v=>v&&v.toLowerCase().includes(q));
     return mq&&(!c||l.course_interest===c);
+  });
+  // Sort: Hot → Warm → Cold → unset, then newest first
+  const prioRank={hot:0,warm:1,cold:2};
+  leads.sort((a,b)=>{
+    const ra=prioRank[a.priority]??3, rb=prioRank[b.priority]??3;
+    if(ra!==rb) return ra-rb;
+    return new Date(b.created_at)-new Date(a.created_at);
   });
   renderPaginatedTable('leads',leads,leadsPage,(p)=>{leadsPage=p;renderLeads();},renderLeadRow,'leads-tbody','leads-page-info','leads-page-btns','leads-count');
 }
 
 function renderLeadRow(l,num){
-  const date=new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const date=new Date(l.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
   const waNum=(l.whatsapp||'').replace(/\D/g,'');
   const waLink=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${l.first_name}! Following up on your Halberg Fin enquiry. When is a good time to connect?`)}`;
   const mailLink=l.email?`mailto:${l.email}?subject=Your Halberg Fin Enquiry&body=Hi ${l.first_name},`:'';
-  return `<tr class="row-active">
+  const prio=l.priority||'';
+  const prioRowClass=prio?` prio-row-${prio}`:'';
+  const na=l.next_action||'';
+  return `<tr class="row-active${prioRowClass}">
     <td style="color:var(--muted);font-size:11px">${num}</td>
     <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div><span class="badge badge-active">✅ Active</span>${daysSinceBadge(l.created_at)}</td>
     <td><div class="td-wa">${esc(l.whatsapp||'—')}</div></td>
-    <td><div class="td-email">${esc(l.email||'—')}</div></td>
     <td><span class="td-course">${esc(l.course_interest||'—')}</span></td>
-    <td><div class="td-exp">${esc((l.experience||'—').split('—')[0].trim())}</div></td>
-    <td><div class="td-msg" title="${esc(l.message||'')}">${esc(l.message||'—')}</div></td>
+    <td><div class="prio-wrap">
+      <span class="prio-pill prio-hot ${prio==='hot'?'active':''}" data-tip="Hot lead" onclick="event.stopPropagation();setPriority('${l.id}','hot')">🔥 Hot</span>
+      <span class="prio-pill prio-warm ${prio==='warm'?'active':''}" data-tip="Warm lead" onclick="event.stopPropagation();setPriority('${l.id}','warm')">☀ Warm</span>
+      <span class="prio-pill prio-cold ${prio==='cold'?'active':''}" data-tip="Cold lead" onclick="event.stopPropagation();setPriority('${l.id}','cold')">❄ Cold</span>
+    </div></td>
+    <td><div class="next-action">
+      <span class="na-text ${na?'':'empty'}" data-tip="Click to edit" onclick="event.stopPropagation();editNextAction('${l.id}',this)">${na?esc(na):'+ Add action'}</span>
+    </div></td>
     <td><div class="td-date">${date}</div></td>
     <td><div class="td-actions">
       <button class="act-btn act-enroll" data-tip="Mark Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>
@@ -1032,6 +1065,44 @@ function renderLeadRow(l,num){
     </div></td>
   </tr>`;
 }
+
+// ── PRIORITY ──────────────────────────────────────
+async function setPriority(id,prio){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  // Toggle off if clicking the same priority
+  const newPrio=lead.priority===prio?null:prio;
+  lead.priority=newPrio;
+  renderLeads();
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{priority:newPrio});
+  }catch(e){alert('Error: '+e.message);loadData();}
+}
+
+// ── NEXT ACTION INLINE EDIT ───────────────────────
+function editNextAction(id,span){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const current=lead.next_action||'';
+  const input=document.createElement('input');
+  input.className='na-input';
+  input.value=current;
+  input.placeholder='e.g. Call Tuesday, send pricing';
+  span.replaceWith(input);
+  input.focus();
+  const save=async()=>{
+    const val=input.value.trim();
+    lead.next_action=val;
+    try{await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{next_action:val||null});}catch(e){alert(e.message);}
+    renderLeads();
+  };
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();input.blur();}
+    if(e.key==='Escape'){renderLeads();}
+  });
+}
+
 
 // ── RENDER ENROLLED TABLE ─────────────────────────
 function renderEnrolled(){
