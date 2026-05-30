@@ -378,6 +378,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .wl-head-overdue{color:var(--red)}
 .wl-head-today{color:var(--gold2)}
 .wl-head-cold{color:#7eb6ff}
+.wl-head-noresp{color:#c084fc}
 .wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .wl-item:last-child{border:none}
 .wl-info{flex:1;min-width:0}
@@ -485,6 +486,10 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <div class="wl-col">
         <div class="wl-col-head wl-head-cold">❄ Going Cold <span id="wl-cold-count">0</span></div>
         <div id="wl-cold"><div class="wl-empty">All leads fresh</div></div>
+      </div>
+      <div class="wl-col">
+        <div class="wl-col-head wl-head-noresp">😴 No Response (5+ days) <span id="wl-noresp-count">0</span></div>
+        <div id="wl-noresp"><div class="wl-empty">Everyone's responsive 🎉</div></div>
       </div>
     </div>
   </div>
@@ -1493,8 +1498,26 @@ async function saveNote(){
   const type=document.getElementById('note-type').value;
   if(!text||!activeLead) return;
   const btn=document.querySelector('.btn-save-note');btn.textContent='Saving...';btn.disabled=true;
-  try{await sb('/rest/v1/activity_logs','POST',{enquiry_id:activeLead.id,note:`${type} ${text}`});document.getElementById('new-note').value='';await loadTimeline();}catch(e){alert(e.message)}
+  try{
+    await sb('/rest/v1/activity_logs','POST',{enquiry_id:activeLead.id,note:`${type} ${text}`});
+    await markContacted(activeLead.id);
+    document.getElementById('new-note').value='';
+    await loadTimeline();
+  }catch(e){alert(e.message)}
   btn.textContent='+ Save Note';btn.disabled=false;
+}
+
+// ── MARK CONTACTED — stamps last_contacted + increments attempts ──
+async function markContacted(id){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const now=new Date().toISOString();
+  const attempts=(lead.contact_attempts||0)+1;
+  lead.last_contacted=now;
+  lead.contact_attempts=attempts;
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{last_contacted:now,contact_attempts:attempts});
+  }catch(e){console.error('markContacted error:',e);}
 }
 
 async function deleteLog(id){
@@ -1818,6 +1841,9 @@ const WA_TEMPLATES=[
   {label:'🎓 Demo Invite', text:`Hi {name}! We have a free live demo class coming up for {course}. It's a great way to experience our teaching style before enrolling. Shall I reserve a spot for you?`},
   {label:'⏰ Re-engage', text:`Hi {name}, it's been a little while! Our {course} batch is filling up. I didn't want you to miss out — are you still keen to join? 🙂`},
   {label:'💳 Payment Reminder', text:`Hi {name}! Just a gentle reminder to complete your enrolment for {course}. Let me know if you need any help with the payment process. Looking forward to having you onboard! 🎯`},
+  {label:'🔁 Nudge 1 (gentle)', text:`Hi {name}, just checking in 🙂 Did you get a chance to think about {course}? Happy to answer any questions whenever suits you.`},
+  {label:'🔁 Nudge 2 (value)', text:`Hi {name}! Many of our {course} students started exactly where you are — unsure if it's right for them. After the first few sessions, most wish they'd started sooner. Would a quick 10-min call help you decide?`},
+  {label:'🔁 Nudge 3 (last call)', text:`Hi {name}, I don't want to keep bothering you 🙏 If now isn't the right time for {course}, no problem at all — just let me know and I'll close your file. But if you're still interested, our next batch has just a few seats left. Either way, wishing you well!`},
 ];
 
 function fillTemplate(text,lead){
@@ -1858,10 +1884,11 @@ async function sendWA(){
   if(document.getElementById('wa-qlog').checked){
     try{
       await sb('/rest/v1/activity_logs','POST',{enquiry_id:waModalLead.id,note:`💬 ${msg||'Sent WhatsApp message'}`});
-      waModalLead.last_contacted=new Date().toISOString();
+      await markContacted(waModalLead.id);
     }catch(e){console.error('Log error:',e);}
   }
   closeModal('modal-wa');
+  if(document.getElementById('tab-today').style.display!=='none') renderWorklist();
 }
 
 // ── TODAY WORKLIST ────────────────────────────────
@@ -1875,29 +1902,39 @@ function renderWorklist(){
     const days=Math.floor((Date.now()-new Date(l.created_at).getTime())/86400000);
     return days>4 && l.priority!=='hot';
   });
+  // No response: active, contacted at least once, but last contact 5+ days ago
+  const noResp=allLeads.filter(l=>{
+    if(l.status!=='active'||!l.last_contacted) return false;
+    const days=Math.floor((Date.now()-new Date(l.last_contacted).getTime())/86400000);
+    return days>=5;
+  }).sort((a,b)=>new Date(a.last_contacted)-new Date(b.last_contacted));
   renderWLCol('wl-hot','wl-hot-count',hot,'hot');
   renderWLCol('wl-cold','wl-cold-count',cold.slice(0,10),'cold');
+  renderWLCol('wl-noresp','wl-noresp-count',noResp.slice(0,10),'noresp');
   // Follow-ups (overdue + today) — async
   loadWorklistFU(today);
-  // Badge = total actionable
-  const badge=document.getElementById('today-badge');
-  const total=hot.length+cold.length;
-  document.getElementById('today-sub').textContent=`${hot.length} hot · ${cold.length} going cold · check follow-ups below`;
+  document.getElementById('today-sub').textContent=`${hot.length} hot · ${cold.length} going cold · ${noResp.length} unresponsive · check follow-ups below`;
 }
 
 function renderWLCol(listId,countId,leads,type){
   document.getElementById(countId).textContent=leads.length;
   if(!leads.length){
-    const msgs={hot:'No hot leads',cold:'All leads fresh'};
+    const msgs={hot:'No hot leads',cold:'All leads fresh',noresp:"Everyone's responsive 🎉"};
     document.getElementById(listId).innerHTML=`<div class="wl-empty">${msgs[type]||'Nothing here'}</div>`;
     return;
   }
   document.getElementById(listId).innerHTML=leads.map(l=>{
     const days=Math.floor((Date.now()-new Date(l.created_at).getTime())/86400000);
+    let metaLine=`${esc(l.course_interest||'No course')} · ${days}d old`;
+    if(type==='noresp'&&l.last_contacted){
+      const lcDays=Math.floor((Date.now()-new Date(l.last_contacted).getTime())/86400000);
+      const att=l.contact_attempts||1;
+      metaLine=`${esc(l.course_interest||'No course')} · last contacted ${lcDays}d ago · ${att} attempt${att!==1?'s':''}`;
+    }
     return `<div class="wl-item">
       <div class="wl-info">
         <div class="wl-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div>
-        <div class="wl-meta">${esc(l.course_interest||'No course')} · ${days}d old</div>
+        <div class="wl-meta">${metaLine}</div>
         ${l.next_action?`<div class="wl-na">→ ${esc(l.next_action)}</div>`:''}
       </div>
       <div class="wl-actions">
