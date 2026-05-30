@@ -141,6 +141,7 @@ td{padding:13px 16px;font-size:13px;vertical-align:middle}
 .act-approve{background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.2)}.act-approve:hover{background:rgba(46,204,113,.22)}
 .act-reject{background:rgba(231,76,60,.08);color:var(--red);border:1px solid rgba(231,76,60,.2)}.act-reject:hover{background:rgba(231,76,60,.15)}
 .act-restore{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)}.act-restore:hover{background:rgba(212,168,67,.2)}
+.act-edit{background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)}.act-edit:hover{background:rgba(212,168,67,.2)}
 .act-enroll{background:rgba(139,92,246,.12);color:var(--purple);border:1px solid rgba(139,92,246,.25)}.act-enroll:hover{background:rgba(139,92,246,.22)}
 
 /* BADGES */
@@ -310,6 +311,37 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 
 @media(max-width:900px){.stats-grid{grid-template-columns:1fr 1fr}.breakdown-grid{grid-template-columns:1fr}.main{padding:16px}.frow{grid-template-columns:1fr}.add-fu-row{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.stats-grid{grid-template-columns:1fr 1fr}.topbar{padding:0 16px}.tb-logo{font-size:16px}th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){display:none}}
+
+/* CONFIRM MODAL */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--ink2);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;overflow:hidden;animation:cpop .2s ease}
+@keyframes cpop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.confirm-head{padding:24px 26px 0;display:flex;align-items:center;gap:14px}
+.confirm-ico{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.confirm-ico.warn{background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.25)}
+.confirm-ico.danger{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25)}
+.confirm-ico.good{background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.25)}
+.confirm-ico.info{background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25)}
+.confirm-title{font-size:17px;font-weight:700;color:white}
+.confirm-body{padding:14px 26px 0;font-size:13px;color:var(--muted);line-height:1.7}
+.confirm-body b{color:var(--text);font-weight:600}
+.confirm-actions{padding:22px 26px 24px;display:flex;gap:10px;justify-content:flex-end}
+.confirm-btn{padding:10px 20px;border-radius:9px;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--border);transition:all .2s}
+.confirm-cancel{background:rgba(255,255,255,.04);color:var(--muted)}
+.confirm-cancel:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
+.confirm-ok{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.confirm-ok:hover{background:var(--gold2)}
+.confirm-ok.danger{background:var(--red);border-color:var(--red);color:white}
+.confirm-ok.danger:hover{background:#c0392b}
+.confirm-ok.good{background:var(--green);border-color:var(--green);color:white}
+.confirm-ok.good:hover{background:#27ae60}
+.confirm-ok.info{background:var(--purple);border-color:var(--purple);color:white}
+.confirm-ok.info:hover{background:#9061f9}
+.confirm-extra{padding:0 26px;margin-top:-4px}
+.confirm-dup{background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.2);border-radius:10px;padding:12px 14px;margin-top:8px}
+.confirm-dup-name{font-size:14px;font-weight:700;color:var(--gold2)}
+.confirm-dup-meta{font-size:11px;color:rgba(212,168,67,.6);margin-top:2px}
 </style>
 </head>
 <body>
@@ -582,7 +614,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 <div class="modal-overlay" id="modal-edit">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">✏️ Edit Lead</div>
+      <div class="modal-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit Lead</div>
       <button class="modal-close" onclick="closeModal('modal-edit')">✕</button>
     </div>
     <div class="modal-body">
@@ -865,7 +897,7 @@ async function loadUpcomingFU(){
           <div style="font-size:11px;color:${overdue?'var(--red)':isToday?'var(--gold)':'var(--muted)'}">${fmtDate(fu.scheduled_date)}${overdue?' ⚠':isToday?' · TODAY':''}</div>
           <div style="font-size:11px;color:rgba(255,255,255,.3)">${esc(fu.note||'Follow-up')}</div>
         </div>
-        <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" onclick="openActivityModal('${e.id}')">📋</button>
+        <button class="act-btn act-log" style="padding:4px 8px;font-size:10px" data-tip="Open activity log" data-tip-pos="left" onclick="openActivityModal('${e.id}')">📋</button>
       </div>`;
     }).join('');
   }catch(e){document.getElementById('upcoming-breakdown').innerHTML='<div style="color:var(--muted);font-size:13px">—</div>'}
@@ -908,8 +940,7 @@ function renderEnquiries(){
       <div class="enq-actions">
         <button class="act-btn act-approve" data-tip="Convert to Lead" onclick="convertToLead('${l.id}')">✓ Convert to Lead</button>
         <button class="act-btn act-reject" data-tip="Reject enquiry" onclick="setStatus('${l.id}','rejected')">✗ Reject</button>
-        <button class="act-btn" style="background:rgba(212,168,67,.1);color:var(--gold);border:1px solid rgba(212,168,67,.2)"
- data-tip="Edit details" onclick="openEditModal('${l.id}')">✏ Edit</button>
+        <button class="act-btn act-edit" data-tip="Edit details" onclick="openEditModal('${l.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit</button>
         <a class="act-btn act-wa" href="${waLink}" target="_blank" data-tip="Open WhatsApp">💬 WhatsApp</a>
         ${l.email?`<a class="act-btn act-mail" href="mailto:${l.email}?subject=Your Halberg Fin Enquiry" data-tip="Send email">✉ Email</a>`:''}
       </div>
@@ -918,12 +949,39 @@ function renderEnquiries(){
 }
 
 // ── CONVERT TO LEAD ───────────────────────────────
-async function convertToLead(id){
+function convertToLead(id){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const dup=findDuplicate(lead.whatsapp,id);
+  if(dup){
+    // Possible duplicate — warn with options
+    showConfirm({
+      type:'warn',
+      icon:'⚠️',
+      title:'Possible Duplicate',
+      text:`Another record with this number already exists. Convert <b>${esc(lead.first_name)} ${esc(lead.last_name||'')}</b> to a lead anyway?`,
+      extraHTML:`<div class="confirm-dup"><div class="confirm-dup-name">${esc(dup.first_name)} ${esc(dup.last_name||'')}</div><div class="confirm-dup-meta">${esc(dup.course_interest||'No course')} · Status: ${dup.status||'pending'} · ${esc(dup.whatsapp||'')}</div></div>`,
+      okLabel:'Convert Anyway',
+      cancelLabel:'Cancel',
+      onConfirm:()=>doConvert(id)
+    });
+  } else {
+    showConfirm({
+      type:'good',
+      icon:'✅',
+      title:'Convert to Lead',
+      text:`Convert <b>${esc(lead.first_name)} ${esc(lead.last_name||'')}</b> into an active lead? They'll move to the Leads tab for follow-up.`,
+      okLabel:'Convert',
+      onConfirm:()=>doConvert(id)
+    });
+  }
+}
+async function doConvert(id){
   try{
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status:'active'});
     const lead=allLeads.find(l=>l.id===id);
     if(lead) lead.status='active';
-    updateStats(); renderEnquiries();
+    updateStats(); renderEnquiries(); renderLeads(); renderEnrolled(); renderRejected();
   }catch(e){alert('Error: '+e.message)}
 }
 
@@ -956,7 +1014,7 @@ function renderLeadRow(l,num){
     <td><div class="td-actions">
       <button class="act-btn act-enroll" data-tip="Mark Enrolled" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','enrolled')">🎓</button>
       <button class="act-btn act-reject" data-tip="Reject lead" data-tip-pos="left" onclick="event.stopPropagation();setStatus('${l.id}','rejected')">✗</button>
-      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="event.stopPropagation();openEditModal('${l.id}')">✏</button>
+      <button class="act-btn act-edit" data-tip="Edit details" data-tip-pos="left" onclick="event.stopPropagation();openEditModal('${l.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="${waLink}" target="_blank" onclick="event.stopPropagation()">💬</a>
       ${l.email?`<a class="act-btn act-mail" data-tip="Email" data-tip-pos="left" href="${mailLink}" onclick="event.stopPropagation()">✉</a>`:''}
       <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="event.stopPropagation();openActivityModal('${l.id}')">📋</button>
@@ -987,9 +1045,9 @@ function renderEnrolledRow(l,num){
     <td><span class="td-course">${esc(l.course_interest||'—')}</span></td>
     <td><div class="td-date">${date}</div></td>
     <td><div class="td-actions">
-      <a class="act-btn act-wa" href="https://wa.me/${waNum}" target="_blank">💬</a>
-      <button class="act-btn act-log" onclick="openActivityModal('${l.id}')">📋</button>
-      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')">✏</button>
+      <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="https://wa.me/${waNum}" target="_blank">💬</a>
+      <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="openActivityModal('${l.id}')">📋</button>
+      <button class="act-btn act-edit" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       <button class="act-btn act-restore" data-tip="Move back to leads" data-tip-pos="left" onclick="setStatus('${l.id}','active')">↩</button>
     </div></td>
   </tr>`;
@@ -1024,8 +1082,31 @@ function goPage(name,p){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ── SET STATUS ────────────────────────────────────
-async function setStatus(id,status){
+// ── SET STATUS (with confirmation) ────────────────
+const _statusConfig={
+  'active':   {type:'good', icon:'✅', title:'Activate as Lead',    verb:'activate',           label:'Activate',         msg:'into an active lead'},
+  'enrolled': {type:'info', icon:'🎓', title:'Mark as Enrolled',    verb:'enroll',             label:'Mark Enrolled',    msg:'as an enrolled student'},
+  'rejected': {type:'danger',icon:'🗑', title:'Reject',             verb:'reject',             label:'Reject',           msg:'— you can restore them later from the Rejected tab'},
+  'pending':  {type:'warn', icon:'↩️', title:'Restore to Enquiry', verb:'restore',            label:'Restore',          msg:'back to the Enquiries queue'}
+};
+function setStatus(id,status){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const cfg=_statusConfig[status]||{type:'warn',title:'Confirm',label:'Confirm',msg:''};
+  const name=`<b>${esc(lead.first_name)} ${esc(lead.last_name||'')}</b>`;
+  let text;
+  if(status==='rejected') text=`Reject ${name}'s enquiry? You can restore it later from the Rejected tab.`;
+  else if(status==='enrolled') text=`Mark ${name} as enrolled? 🎓 Congratulations on the conversion!`;
+  else if(status==='active' && lead.status==='enrolled') text=`Move ${name} back to active leads?`;
+  else if(status==='active') text=`Activate ${name} as a lead? They'll move to the Leads tab.`;
+  else if(status==='pending') text=`Restore ${name} ${cfg.msg}?`;
+  else text=`${cfg.label} ${name}?`;
+  showConfirm({
+    type:cfg.type, icon:cfg.icon, title:cfg.title, text, okLabel:cfg.label,
+    onConfirm:()=>doSetStatus(id,status)
+  });
+}
+async function doSetStatus(id,status){
   try{
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status});
     const lead=allLeads.find(l=>l.id===id);
@@ -1104,10 +1185,10 @@ async function openActivityModal(leadId){
   document.getElementById('lp-mail-btn').href=activeLead.email?`mailto:${activeLead.email}`:'#';
   const actDiv=document.getElementById('lp-status-actions');
   actDiv.innerHTML='';
-  if(st==='pending') actDiv.innerHTML+=`<button class="act-btn act-approve" onclick="convertToLead('${activeLead.id}');closeModal('modal-activity')">✓ Convert to Lead</button>`;
-  if(st==='active') actDiv.innerHTML+=`<button class="act-btn act-enroll" onclick="setStatus('${activeLead.id}','enrolled');closeModal('modal-activity')">🎓 Mark Enrolled</button>`;
-  if(st!=='rejected') actDiv.innerHTML+=`<button class="act-btn act-reject" onclick="setStatus('${activeLead.id}','rejected');closeModal('modal-activity')">✗ Reject</button>`;
-  if(st==='rejected') actDiv.innerHTML+=`<button class="act-btn act-restore" onclick="setStatus('${activeLead.id}','pending');closeModal('modal-activity')">↩ Restore</button>`;
+  if(st==='pending') actDiv.innerHTML+=`<button class="act-btn act-approve" onclick="closeModal('modal-activity');convertToLead('${activeLead.id}')">✓ Convert to Lead</button>`;
+  if(st==='active') actDiv.innerHTML+=`<button class="act-btn act-enroll" onclick="closeModal('modal-activity');setStatus('${activeLead.id}','enrolled')">🎓 Mark Enrolled</button>`;
+  if(st!=='rejected') actDiv.innerHTML+=`<button class="act-btn act-reject" onclick="closeModal('modal-activity');setStatus('${activeLead.id}','rejected')">✗ Reject</button>`;
+  if(st==='rejected') actDiv.innerHTML+=`<button class="act-btn act-restore" onclick="closeModal('modal-activity');setStatus('${activeLead.id}','pending')">↩ Restore</button>`;
   document.getElementById('new-note').value='';
   document.getElementById('fu-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('fu-note').value='';
@@ -1140,8 +1221,9 @@ async function saveNote(){
 }
 
 async function deleteLog(id){
-  if(!confirm('Delete this note?')) return;
-  try{await sb(`/rest/v1/activity_logs?id=eq.${id}`,'DELETE');await loadTimeline();}catch(e){alert(e.message)}
+  showConfirm({type:'danger',icon:'🗑',title:'Delete Note',text:'Delete this activity note permanently?',okLabel:'Delete',onConfirm:async()=>{
+    try{await sb(`/rest/v1/activity_logs?id=eq.${id}`,'DELETE');await loadTimeline();}catch(e){alert(e.message)}
+  }});
 }
 
 // ── FOLLOW-UPS ────────────────────────────────────
@@ -1172,7 +1254,11 @@ async function addFollowUp(){
   btn.textContent='+ Schedule';btn.disabled=false;
 }
 async function toggleFU(id,done){try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'PATCH',{done:!done});await loadFU()}catch(e){alert(e.message)}}
-async function deleteFU(id){if(!confirm('Delete?'))return;try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'DELETE');await loadFU()}catch(e){alert(e.message)}}
+async function deleteFU(id){
+  showConfirm({type:'danger',icon:'🗑',title:'Delete Follow-Up',text:'Delete this scheduled follow-up?',okLabel:'Delete',onConfirm:async()=>{
+    try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'DELETE');await loadFU()}catch(e){alert(e.message)}
+  }});
+}
 
 // ── GLOBAL FOLLOW-UPS TAB ─────────────────────────
 async function loadAllFU(){
@@ -1194,12 +1280,20 @@ async function loadAllFU(){
               <div class="fu-lead-note">${esc(fu.note||'Follow-up')}</div>
             </div>
             <a class="act-btn act-wa" href="https://wa.me/${waNum}" target="_blank">💬 WA</a>
-            <button class="act-btn act-log" onclick="switchTab('leads');setTimeout(()=>openActivityModal('${fu.enquiries?.id}'),100)">📋 Log</button>
-            <button class="act-btn act-approve" onclick="toggleFUGlobal('${fu.id}')">✓ Done</button>
+            <button class="act-btn act-log" data-tip="Open activity log" data-tip-pos="left" onclick="openActivityModal('${fu.enquiries?.id}')">📋 Log</button>
+            <button class="act-btn act-approve" data-tip="Mark follow-up done" data-tip-pos="left" onclick="confirmFUDone('${fu.id}')">✓ Done</button>
           </div>`;
         }).join('')}
       </div>`).join('');
   }catch(e){document.getElementById('all-fu-wrap').innerHTML=`<div style="color:var(--red);padding:40px;text-align:center">${e.message}</div>`}
+}
+function confirmFUDone(id){
+  showConfirm({
+    type:'good', icon:'✅', title:'Mark Follow-Up Done',
+    text:'Mark this follow-up as completed? It will be removed from the pending list.',
+    okLabel:'Mark Done',
+    onConfirm:()=>toggleFUGlobal(id)
+  });
 }
 async function toggleFUGlobal(id){try{await sb(`/rest/v1/follow_ups?id=eq.${id}`,'PATCH',{done:true});await loadAllFU()}catch(e){alert(e.message)}}
 
@@ -1231,7 +1325,7 @@ function renderRejectedRow(l,num){
     <td><div class="td-actions">
       <button class="act-btn act-restore" data-tip="Restore to Enquiry" data-tip-pos="left" onclick="setStatus('${l.id}','pending')">↩ Restore</button>
       <button class="act-btn act-approve" data-tip="Activate as Lead" data-tip-pos="left" onclick="setStatus('${l.id}','active')">✓ Activate</button>
-      <button class="act-btn" style="background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')">✏ Edit</button>
+      <button class="act-btn act-edit" data-tip="Edit details" data-tip-pos="left" onclick="openEditModal('${l.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit</button>
       <a class="act-btn act-wa" data-tip="WhatsApp" data-tip-pos="left" href="${waLink}" target="_blank">💬</a>
       <button class="act-btn act-log" data-tip="Activity log" data-tip-pos="left" onclick="openActivityModal('${l.id}')">📋</button>
     </div></td>
@@ -1291,6 +1385,45 @@ async function saveEdit(){
     showMsg('edit-msg',e.message,'error');
     btn.textContent='Save Changes';btn.disabled=false;
   }
+}
+
+// ── CONFIRM MODAL ENGINE ──────────────────────────
+let _confirmCb=null;
+function showConfirm(opts){
+  // opts: {title, text, okLabel, cancelLabel, type, extraHTML, onConfirm}
+  document.getElementById('confirm-title').textContent=opts.title||'Are you sure?';
+  document.getElementById('confirm-text').innerHTML=opts.text||'';
+  document.getElementById('confirm-extra').innerHTML=opts.extraHTML||'';
+  const ico=document.getElementById('confirm-ico');
+  const type=opts.type||'warn';
+  ico.className='confirm-ico '+type;
+  ico.textContent=opts.icon||(type==='danger'?'🗑':type==='good'?'✅':type==='info'?'↩️':'⚠️');
+  const okBtn=document.getElementById('confirm-ok-btn');
+  okBtn.textContent=opts.okLabel||'Confirm';
+  okBtn.className='confirm-btn confirm-ok '+(type==='warn'?'':type);
+  document.getElementById('confirm-cancel-btn').textContent=opts.cancelLabel||'Cancel';
+  _confirmCb=opts.onConfirm||null;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirm-modal').classList.remove('open');_confirmCb=null;}
+document.addEventListener('DOMContentLoaded',()=>{
+  const ok=document.getElementById('confirm-ok-btn');
+  const cancel=document.getElementById('confirm-cancel-btn');
+  const modal=document.getElementById('confirm-modal');
+  if(ok) ok.addEventListener('click',()=>{const cb=_confirmCb;closeConfirm();if(cb)cb();});
+  if(cancel) cancel.addEventListener('click',closeConfirm);
+  if(modal) modal.addEventListener('click',e=>{if(e.target.id==='confirm-modal')closeConfirm();});
+});
+
+// ── DUPLICATE CHECK HELPER ────────────────────────
+function findDuplicate(waNumber,excludeId){
+  const norm=(waNumber||'').replace(/\D/g,'');
+  if(norm.length<7) return null;
+  return allLeads.find(l=>{
+    if(excludeId&&l.id===excludeId) return false;
+    const ln=(l.whatsapp||'').replace(/\D/g,'');
+    return ln===norm||(ln.length>=10&&norm.length>=10&&ln.slice(-10)===norm.slice(-10));
+  });
 }
 
 // ── UTILS ─────────────────────────────────────────
@@ -1480,5 +1613,21 @@ function selectCC(country){
 // Init on load
 document.addEventListener('DOMContentLoaded',initCCDropdown);
 </script>
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-head">
+      <div class="confirm-ico warn" id="confirm-ico">⚠️</div>
+      <div class="confirm-title" id="confirm-title">Are you sure?</div>
+    </div>
+    <div class="confirm-body" id="confirm-text">This action cannot be undone.</div>
+    <div class="confirm-extra" id="confirm-extra"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-cancel" id="confirm-cancel-btn">Cancel</button>
+      <button class="confirm-btn confirm-ok" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
