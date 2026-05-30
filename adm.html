@@ -54,6 +54,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .tb-logo{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold2);letter-spacing:2px}
 .tb-sub{font-size:9px;color:rgba(212,168,67,.4);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
 .tb-right{display:flex;align-items:center;gap:10px}
+.tb-bell{background:rgba(255,255,255,.04);color:var(--muted)}
+.tb-bell:hover{border-color:var(--gold);color:var(--gold)}
+.tb-bell.on{background:rgba(46,204,113,.12);color:var(--green);border-color:rgba(46,204,113,.3)}
+/* DAYS-SINCE BADGE */
+.days-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.3px;margin-left:8px}
+.days-fresh{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
+.days-warn{background:rgba(212,168,67,.12);color:var(--gold);border:1px solid rgba(212,168,67,.3)}
+.days-cold{background:rgba(231,76,60,.1);color:var(--red);border:1px solid rgba(231,76,60,.3)}
 .tb-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s;border:1px solid var(--border);letter-spacing:.3px}
 .tb-refresh{background:rgba(212,168,67,.1);color:var(--gold)}.tb-refresh:hover{background:rgba(212,168,67,.2)}
 .tb-add{background:var(--gold);color:var(--ink);border-color:var(--gold)}.tb-add:hover{background:var(--gold2)}
@@ -368,6 +376,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     </div>
     <div class="tb-right">
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
+      <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="New-lead alerts">🔔 Off</button>
       <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
       <button class="tb-btn tb-refresh" onclick="loadData()" data-tip="Refresh all data">↻ Refresh</button>
       <button class="tb-btn tb-logout" onclick="logout()" data-tip="Sign out">Sign Out</button>
@@ -836,6 +845,8 @@ async function loadData(){
     updateStats();
     renderEnquiries();
     loadUpcomingFU();
+    initNotifyState();
+    if(notifyOn) startPolling();
   }catch(e){
     console.error(e);
   }
@@ -926,7 +937,7 @@ function renderEnquiries(){
     return `<div class="enq-card">
       <div class="enq-card-top">
         <div>
-          <div class="enq-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div>
+          <div class="enq-name">${esc(l.first_name)} ${esc(l.last_name||'')}${daysSinceBadge(l.created_at)}</div>
           <div class="enq-time">${date}</div>
         </div>
         <span class="enq-course-tag">${esc(l.course_interest||'No course selected')}</span>
@@ -1004,7 +1015,7 @@ function renderLeadRow(l,num){
   const mailLink=l.email?`mailto:${l.email}?subject=Your Halberg Fin Enquiry&body=Hi ${l.first_name},`:'';
   return `<tr class="row-active">
     <td style="color:var(--muted);font-size:11px">${num}</td>
-    <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div><span class="badge badge-active">✅ Active</span></td>
+    <td><div class="td-name">${esc(l.first_name)} ${esc(l.last_name||'')}</div><span class="badge badge-active">✅ Active</span>${daysSinceBadge(l.created_at)}</td>
     <td><div class="td-wa">${esc(l.whatsapp||'—')}</div></td>
     <td><div class="td-email">${esc(l.email||'—')}</div></td>
     <td><span class="td-course">${esc(l.course_interest||'—')}</span></td>
@@ -1424,6 +1435,112 @@ function findDuplicate(waNumber,excludeId){
     const ln=(l.whatsapp||'').replace(/\D/g,'');
     return ln===norm||(ln.length>=10&&norm.length>=10&&ln.slice(-10)===norm.slice(-10));
   });
+}
+
+// ── DAYS SINCE ENQUIRY BADGE ──────────────────────
+function daysSinceBadge(createdAt){
+  if(!createdAt) return '';
+  const days=Math.floor((Date.now()-new Date(createdAt).getTime())/86400000);
+  if(days===0) return '<span class="days-badge days-fresh">● Today</span>';
+  if(days===1) return '<span class="days-badge days-fresh">1 day ago</span>';
+  if(days<=3) return `<span class="days-badge days-warn">${days} days ago</span>`;
+  return `<span class="days-badge days-cold">⚠ ${days} days ago</span>`;
+}
+
+// ── NEW-LEAD NOTIFICATIONS ────────────────────────
+let notifyOn=sessionStorage.getItem('hf_notify')==='1';
+let lastPendingIds=new Set();
+let pollTimer=null;
+
+function initNotifyState(){
+  const btn=document.getElementById('bell-btn');
+  if(notifyOn){btn.classList.add('on');btn.innerHTML='🔔 On';}
+  else{btn.classList.remove('on');btn.innerHTML='🔔 Off';}
+}
+
+async function toggleNotifications(){
+  notifyOn=!notifyOn;
+  sessionStorage.setItem('hf_notify',notifyOn?'1':'0');
+  initNotifyState();
+  if(notifyOn){
+    // Request browser permission
+    if('Notification' in window && Notification.permission==='default'){
+      try{await Notification.requestPermission();}catch(e){}
+    }
+    startPolling();
+  } else {
+    stopPolling();
+  }
+}
+
+function startPolling(){
+  stopPolling();
+  // Seed current pending IDs so we only alert on NEW ones
+  lastPendingIds=new Set(allLeads.filter(l=>(l.status||'pending')==='pending').map(l=>l.id));
+  pollTimer=setInterval(pollNewLeads,30000); // every 30s
+}
+function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+
+async function pollNewLeads(){
+  try{
+    const fresh=await sb('/rest/v1/enquiries?select=*&order=created_at.desc');
+    const newPending=fresh.filter(l=>(l.status||'pending')==='pending');
+    const brandNew=newPending.filter(l=>!lastPendingIds.has(l.id));
+    if(brandNew.length){
+      allLeads=fresh;
+      updateStats();renderEnquiries();
+      brandNew.forEach(l=>lastPendingIds.add(l.id));
+      fireLeadAlert(brandNew);
+    }
+  }catch(e){console.error('Poll error:',e);}
+}
+
+function fireLeadAlert(leads){
+  playChime();
+  const n=leads.length;
+  const first=leads[0];
+  const title=n===1?`🎯 New Lead: ${first.first_name||'Someone'}`:`🎯 ${n} New Leads!`;
+  const body=n===1?`${first.course_interest||'No course selected'} · ${first.whatsapp||''}`:`${n} new enquiries just came in`;
+  // Browser notification
+  if('Notification' in window && Notification.permission==='granted'){
+    try{
+      const notif=new Notification(title,{body,icon:'halbergfin_logo.png',tag:'hf-lead'});
+      notif.onclick=()=>{window.focus();switchTab('enquiries');notif.close();};
+    }catch(e){}
+  }
+  // In-page toast as fallback
+  showToast(title,body);
+}
+
+function showToast(title,body){
+  let toast=document.getElementById('lead-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='lead-toast';
+    toast.style.cssText='position:fixed;bottom:24px;right:24px;z-index:99999;background:#1a2035;border:1px solid rgba(46,204,113,.4);border-radius:14px;padding:16px 20px;box-shadow:0 16px 48px rgba(0,0,0,.6);max-width:320px;cursor:pointer;animation:cpop .25s ease';
+    toast.onclick=()=>{switchTab('enquiries');toast.remove();};
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML=`<div style="font-size:14px;font-weight:700;color:#2ecc71;margin-bottom:3px">${esc(title)}</div><div style="font-size:12px;color:rgba(255,255,255,.5)">${esc(body)}</div><div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:6px">Click to view →</div>`;
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>{if(toast)toast.remove();},8000);
+}
+
+function playChime(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const notes=[880,1108.73]; // A5, C#6 — pleasant two-tone
+    notes.forEach((freq,i)=>{
+      const osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';osc.frequency.value=freq;
+      const t=ctx.currentTime+i*0.15;
+      gain.gain.setValueAtTime(0,t);
+      gain.gain.linearRampToValueAtTime(0.25,t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+      osc.start(t);osc.stop(t+0.4);
+    });
+  }catch(e){}
 }
 
 // ── UTILS ─────────────────────────────────────────
