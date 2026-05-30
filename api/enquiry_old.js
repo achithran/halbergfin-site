@@ -22,53 +22,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'first_name and whatsapp are required' });
   }
 
-  // Normalised number (last 10 digits) for duplicate matching
-  const waDigits = (whatsapp || '').replace(/\D/g, '');
-  const waLast10 = waDigits.slice(-10);
-
-  // ── DUPLICATE CHECK ──────────────────────────────
-  // Pull existing enquiries and match on last 10 digits of the number
-  let duplicate = null;
-  try {
-    const { data: existing } = await supabase
-      .from('enquiries')
-      .select('id, first_name, whatsapp')
-      .order('created_at', { ascending: false });
-
-    if (existing && existing.length) {
-      duplicate = existing.find(row => {
-        const rowDigits = (row.whatsapp || '').replace(/\D/g, '');
-        return rowDigits === waDigits ||
-               (rowDigits.length >= 10 && waLast10.length === 10 && rowDigits.slice(-10) === waLast10);
-      });
-    }
-  } catch (e) {
-    console.error('Dup-check error (continuing as new):', e);
-  }
-
-  // ── IF DUPLICATE: log re-submission, skip new row + email ──
-  if (duplicate) {
-    try {
-      const parts = [];
-      if (course_interest) parts.push(`Course: ${course_interest}`);
-      if (experience) parts.push(`Experience: ${experience}`);
-      if (message) parts.push(`Message: ${message}`);
-      const detail = parts.length ? ` (${parts.join(' · ')})` : '';
-      await supabase.from('activity_logs').insert([{
-        enquiry_id: duplicate.id,
-        note: `🔄 Re-submitted demo request form${detail}`
-      }]);
-    } catch (e) {
-      console.error('Could not log re-submission:', e);
-    }
-
-    // User still sees success + WhatsApp redirect
-    const waTextDup = encodeURIComponent(`Hi ${first_name}! 👋 Thanks for reaching out again to Halberg Fin. We'll be in touch shortly about ${course_interest || 'our courses'}!`);
-    const waUrlDup = `https://wa.me/${process.env.WHATSAPP_NUMBER}?text=${waTextDup}`;
-    return res.status(200).json({ success: true, duplicate: true, waUrl: waUrlDup });
-  }
-
-  // ── NEW ENQUIRY: save to Supabase ────────────────
+  // 1. Save to Supabase
   const { error: dbError } = await supabase.from('enquiries').insert([{
     first_name,
     last_name,
@@ -84,7 +38,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database error', detail: dbError.message });
   }
 
-  // Send notification email to admin (new leads only)
+  // 2. Send notification email to admin
   await resend.emails.send({
     from: 'Halberg Fin <onboarding@resend.dev>',
     to: process.env.NOTIFY_EMAIL,
@@ -107,7 +61,7 @@ export default async function handler(req, res) {
     `
   });
 
-  // Build WhatsApp redirect URL
+  // 3. Build WhatsApp redirect URL
   const waText = encodeURIComponent(`Hi ${first_name}! 👋 Thanks for your interest in ${course_interest || 'our courses'} at Halberg Fin. We'll schedule your free demo class shortly. Meanwhile, feel free to ask anything here!`);
   const waUrl = `https://wa.me/${process.env.WHATSAPP_NUMBER}?text=${waText}`;
 
