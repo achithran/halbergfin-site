@@ -379,6 +379,16 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .wl-head-today{color:var(--gold2)}
 .wl-head-cold{color:#7eb6ff}
 .wl-head-noresp{color:#c084fc}
+/* VIEW TOGGLE */
+.view-toggle{display:flex;background:var(--ink2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.vt-btn{padding:9px 16px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;transition:all .2s}
+.vt-btn.active{background:var(--gold);color:var(--ink)}
+.vt-btn:not(.active):hover{color:var(--text)}
+/* ASSIGN SELECT */
+.assign-select{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-family:'Satoshi',sans-serif;font-size:11px;color:var(--text);outline:none;max-width:120px;cursor:pointer}
+.assign-select:focus{border-color:rgba(212,168,67,.4)}
+.assign-select option{background:var(--ink2)}
+.assigned-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(139,92,246,.12);color:var(--purple);border:1px solid rgba(139,92,246,.25)}
 .wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .wl-item:last-child{border:none}
 .wl-info{flex:1;min-width:0}
@@ -586,6 +596,10 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="page-sub">Approved leads — follow up, log activity, mark enrolled</div>
 
     <div class="toolbar">
+      <div class="view-toggle">
+        <button class="vt-btn active" id="vt-all" onclick="setLeadsView('all')">All Leads</button>
+        <button class="vt-btn" id="vt-mine" onclick="setLeadsView('mine')">My Leads</button>
+      </div>
       <div class="search-wrap">
         <span class="search-ico">🔍</span>
         <input class="search-input" type="text" id="leads-search" placeholder="Search leads..." oninput="renderLeads()"/>
@@ -605,7 +619,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Course</th><th>Priority</th><th>Next Action</th><th>Date</th><th>Actions</th></tr>
+          <tr><th>#</th><th>Name</th><th>WhatsApp</th><th>Course</th><th>Priority</th><th>Assigned</th><th>Next Action</th><th>Date</th><th>Actions</th></tr>
         </thead>
         <tbody id="leads-tbody">
           <tr><td colspan="9" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
@@ -883,6 +897,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
           <div class="lp-item">✉ <b id="lp-email">—</b></div>
         </div>
         <div><span class="lp-course" id="lp-course">—</span></div>
+        <div class="lp-item" style="margin-top:8px">👤 Assigned to: <span id="lp-assign-wrap"></span></div>
         <div class="lp-actions" style="margin-top:10px">
           <a class="act-btn act-wa" id="lp-wa-btn" href="#" target="_blank">💬 WhatsApp</a>
           <a class="act-btn act-mail" id="lp-mail-btn" href="#">✉ Email</a>
@@ -946,6 +961,8 @@ let H = H_();
 
 const PER_PAGE=20;
 let allLeads=[], leadsPage=1, enrolledPage=1;
+let allAdmins=[];
+let leadsViewMode='all'; // 'all' or 'mine'
 let activeLead=null, dupLead=null, dupTimer=null;
 
 // ── AUTH (Supabase) ───────────────────────────────
@@ -1057,6 +1074,8 @@ async function sb(path,method='GET',body=null){
 // ── LOAD DATA ─────────────────────────────────────
 async function loadData(){
   try{
+    // Load team list (for assignment dropdowns) — non-fatal if it fails
+    try{ allAdmins=await sb('/rest/v1/admins?select=*&order=full_name.asc'); }catch(e){ allAdmins=allAdmins||[]; }
     allLeads=await sb('/rest/v1/enquiries?select=*&order=created_at.desc');
     document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString('en-IN');
     updateStats();
@@ -1068,6 +1087,21 @@ async function loadData(){
   }catch(e){
     console.error(e);
   }
+}
+
+// Helper: admin name from id
+function adminName(id){
+  if(!id) return null;
+  const a=(allAdmins||[]).find(x=>x.id===id);
+  return a?(a.full_name||a.email):'Unknown';
+}
+// Build assignment dropdown <select> HTML for a lead
+function assignSelectHTML(lead){
+  const opts=['<option value="">Unassigned</option>']
+    .concat((allAdmins||[]).filter(a=>a.active).map(a=>
+      `<option value="${a.id}" ${lead.assigned_to===a.id?'selected':''}>${esc(a.full_name||a.email)}</option>`
+    ));
+  return `<select class="assign-select" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignLead('${lead.id}',this.value)">${opts.join('')}</select>`;
 }
 
 // ── STATS + FUNNEL ────────────────────────────────
@@ -1207,9 +1241,24 @@ function convertToLead(id){
 }
 async function doConvert(id){
   try{
-    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status:'active'});
+    // Round-robin auto-assign among active agents (if any exist)
+    let patch={status:'active'};
+    const agents=(allAdmins||[]).filter(a=>a.active&&a.role==='agent');
+    if(agents.length){
+      // Count current active leads per agent, pick the one with fewest
+      const counts={};
+      agents.forEach(a=>counts[a.id]=0);
+      allLeads.forEach(l=>{if(l.status==='active'&&counts[l.assigned_to]!==undefined)counts[l.assigned_to]++;});
+      const target=agents.reduce((min,a)=>counts[a.id]<counts[min.id]?a:min,agents[0]);
+      patch.assigned_to=target.id;
+      patch.assigned_at=new Date().toISOString();
+    }
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',patch);
     const lead=allLeads.find(l=>l.id===id);
-    if(lead) lead.status='active';
+    if(lead){lead.status='active';if(patch.assigned_to){lead.assigned_to=patch.assigned_to;lead.assigned_at=patch.assigned_at;}}
+    if(patch.assigned_to){
+      try{await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Auto-assigned to ${adminName(patch.assigned_to)}`,logged_by:currentAdmin?currentAdmin.id:null});}catch(e){}
+    }
     updateStats(); renderEnquiries(); renderLeads(); renderEnrolled(); renderRejected();
   }catch(e){alert('Error: '+e.message)}
 }
@@ -1220,6 +1269,8 @@ function renderLeads(){
   const c=document.getElementById('leads-filter-course').value;
   const leads=allLeads.filter(l=>{
     if(l.status!=='active') return false;
+    // My Leads view — only leads assigned to current admin
+    if(leadsViewMode==='mine'&&currentAdmin&&l.assigned_to!==currentAdmin.id) return false;
     const mq=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message,l.next_action].some(v=>v&&v.toLowerCase().includes(q));
     return mq&&(!c||l.course_interest===c);
   });
@@ -1231,6 +1282,14 @@ function renderLeads(){
     return new Date(b.created_at)-new Date(a.created_at);
   });
   renderPaginatedTable('leads',leads,leadsPage,(p)=>{leadsPage=p;renderLeads();},renderLeadRow,'leads-tbody','leads-page-info','leads-page-btns','leads-count');
+}
+
+function setLeadsView(mode){
+  leadsViewMode=mode;
+  document.getElementById('vt-all').classList.toggle('active',mode==='all');
+  document.getElementById('vt-mine').classList.toggle('active',mode==='mine');
+  leadsPage=1;
+  renderLeads();
 }
 
 function renderLeadRow(l,num){
@@ -1251,6 +1310,7 @@ function renderLeadRow(l,num){
       <span class="prio-pill prio-warm ${prio==='warm'?'active':''}" data-tip="Warm lead" onclick="event.stopPropagation();setPriority('${l.id}','warm')">☀ Warm</span>
       <span class="prio-pill prio-cold ${prio==='cold'?'active':''}" data-tip="Cold lead" onclick="event.stopPropagation();setPriority('${l.id}','cold')">❄ Cold</span>
     </div></td>
+    <td>${assignSelectHTML(l)}</td>
     <td><div class="next-action">
       <span class="na-text ${na?'':'empty'}" data-tip="Click to edit" onclick="event.stopPropagation();editNextAction('${l.id}',this)">${na?esc(na):'+ Add action'}</span>
     </div></td>
@@ -1276,6 +1336,24 @@ async function setPriority(id,prio){
   renderLeads();
   try{
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{priority:newPrio});
+  }catch(e){alert('Error: '+e.message);loadData();}
+}
+
+// ── ASSIGN LEAD ───────────────────────────────────
+async function assignLead(id,adminId){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const newAssignee=adminId||null;
+  lead.assigned_to=newAssignee;
+  lead.assigned_at=newAssignee?new Date().toISOString():null;
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{assigned_to:newAssignee,assigned_at:lead.assigned_at});
+    // Log the assignment as activity
+    if(newAssignee){
+      const who=adminName(newAssignee);
+      await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Assigned to ${who}`,logged_by:currentAdmin?currentAdmin.id:null});
+    }
+    if(leadsViewMode==='mine') renderLeads();
   }catch(e){alert('Error: '+e.message);loadData();}
 }
 
@@ -1462,6 +1540,7 @@ async function openActivityModal(leadId){
   document.getElementById('lp-wa').textContent=activeLead.whatsapp||'—';
   document.getElementById('lp-email').textContent=activeLead.email||'—';
   document.getElementById('lp-course').textContent=activeLead.course_interest||'—';
+  document.getElementById('lp-assign-wrap').innerHTML=assignSelectHTML(activeLead);
   const waNum=(activeLead.whatsapp||'').replace(/\D/g,'');
   document.getElementById('lp-wa-btn').href=`https://wa.me/${waNum}?text=${encodeURIComponent(`Hi ${activeLead.first_name}!`)}`;
   document.getElementById('lp-mail-btn').href=activeLead.email?`mailto:${activeLead.email}`:'#';
@@ -1484,12 +1563,14 @@ async function loadTimeline(){
   try{
     const logs=await sb(`/rest/v1/activity_logs?enquiry_id=eq.${activeLead.id}&order=logged_at.desc&select=*`);
     if(!logs||!logs.length){document.getElementById('timeline-wrap').innerHTML='<div class="no-activity">No activity yet. Add a note above.</div>';return}
-    document.getElementById('timeline-wrap').innerHTML=`<div class="timeline">${logs.map(log=>`
+    document.getElementById('timeline-wrap').innerHTML=`<div class="timeline">${logs.map(log=>{
+      const by=log.logged_by?adminName(log.logged_by):null;
+      return `
       <div class="tl-item" id="tl-${log.id}">
         <div class="tl-dot"></div>
-        <div class="tl-time">${new Date(log.logged_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="tl-time">${new Date(log.logged_at).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}${by?` · <span style="color:var(--gold2)">${esc(by)}</span>`:''}</div>
         <div class="tl-note"><span>${esc(log.note)}</span><button class="tl-del" onclick="deleteLog('${log.id}')">🗑</button></div>
-      </div>`).join('')}</div>`;
+      </div>`;}).join('')}</div>`;
   }catch(e){document.getElementById('timeline-wrap').innerHTML=`<div class="no-activity" style="color:var(--red)">${e.message}</div>`}
 }
 
@@ -1499,7 +1580,7 @@ async function saveNote(){
   if(!text||!activeLead) return;
   const btn=document.querySelector('.btn-save-note');btn.textContent='Saving...';btn.disabled=true;
   try{
-    await sb('/rest/v1/activity_logs','POST',{enquiry_id:activeLead.id,note:`${type} ${text}`});
+    await sb('/rest/v1/activity_logs','POST',{enquiry_id:activeLead.id,note:`${type} ${text}`,logged_by:currentAdmin?currentAdmin.id:null});
     await markContacted(activeLead.id);
     document.getElementById('new-note').value='';
     await loadTimeline();
@@ -1984,8 +2065,6 @@ function renderWLFU(listId,countId,fus){
 }
 
 // ── ADMIN / TEAM MANAGEMENT ───────────────────────
-let allAdmins=[];
-
 async function loadAdmins(){
   const tb=document.getElementById('admins-tbody');
   tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>';
