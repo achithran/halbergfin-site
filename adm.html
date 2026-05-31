@@ -392,6 +392,28 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .claim-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.3);cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s}
 .claim-btn:hover{background:rgba(46,204,113,.22)}
 .assigned-other{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+/* ASSIGNMENT OVERVIEW */
+.assign-overview{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:8px}
+.ov-card{background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.ov-card.ov-unassigned{border-color:rgba(231,76,60,.3);background:rgba(231,76,60,.05)}
+.ov-name{font-size:13px;font-weight:700;color:white;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.ov-count{font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--gold2);line-height:1}
+.ov-unassigned .ov-count{color:#ff6b5a}
+.ov-bar-track{height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:10px;overflow:hidden}
+.ov-bar-fill{height:100%;background:linear-gradient(to right,var(--gold),var(--gold2));border-radius:3px;transition:width .6s}
+.ov-pct{font-size:10px;color:var(--muted);margin-top:5px}
+/* BULK ASSIGN */
+.bulk-assign-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;background:linear-gradient(135deg,rgba(212,168,67,.08),rgba(212,168,67,.03));border:1px solid rgba(212,168,67,.25);border-radius:14px;padding:18px 24px;margin-top:16px}
+.bulk-count{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold2);letter-spacing:1px}
+.bulk-sub{font-size:12px;color:var(--muted)}
+.bulk-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bulk-btn{padding:10px 18px;border-radius:9px;font-family:'Satoshi',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
+.bulk-auto{background:var(--gold);color:var(--ink)}
+.bulk-auto:hover{background:var(--gold2)}
+.bulk-one{background:rgba(139,92,246,.15);color:var(--purple);border:1px solid rgba(139,92,246,.3)}
+.bulk-one:hover{background:rgba(139,92,246,.25)}
+.bulk-select{background:var(--ink2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none}
+.bulk-select option{background:var(--ink2)}
 .wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .wl-item:last-child{border:none}
 .wl-info{flex:1;min-width:0}
@@ -733,15 +755,38 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   <div id="tab-admins" class="main" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
       <div>
-        <div class="page-title">Team Members</div>
-        <div class="page-sub">Add, manage and assign roles to your team</div>
+        <div class="page-title">Team & Assignments</div>
+        <div class="page-sub">Manage your team and distribute leads</div>
       </div>
       <button class="tb-btn tb-add" onclick="openAddAdminModal()" style="padding:10px 18px">+ Add Team Member</button>
     </div>
+
+    <!-- ASSIGNMENT OVERVIEW -->
+    <div class="card-title" style="margin-top:24px">📊 Lead Assignment Overview</div>
+    <div class="assign-overview" id="assign-overview">
+      <div style="color:var(--muted);font-size:13px;padding:16px">Loading...</div>
+    </div>
+
+    <!-- BULK ASSIGN UNASSIGNED -->
+    <div class="bulk-assign-bar" id="bulk-assign-bar" style="display:none">
+      <div class="bulk-info">
+        <div class="bulk-count"><span id="bulk-unassigned-num">0</span> unassigned leads</div>
+        <div class="bulk-sub">Distribute the backlog to your team</div>
+      </div>
+      <div class="bulk-actions">
+        <button class="bulk-btn bulk-auto" onclick="bulkAutoDistribute()">⚖️ Auto-distribute evenly</button>
+        <select class="bulk-select" id="bulk-target">
+          <option value="">Assign all to…</option>
+        </select>
+        <button class="bulk-btn bulk-one" onclick="bulkAssignToOne()">→ Assign</button>
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-top:28px">👥 Team Members</div>
     <div class="table-wrap" style="margin-top:8px">
       <table>
         <thead>
-          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th>Actions</th></tr>
+          <tr><th>Name</th><th>Email</th><th>Role</th><th>Active Leads</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody id="admins-tbody">
           <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
@@ -2122,9 +2167,113 @@ async function loadAdmins(){
   try{
     allAdmins=await sb('/rest/v1/admins?select=*&order=created_at.asc');
     renderAdmins();
+    renderAssignOverview();
   }catch(e){
     tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">${esc(e.message)}</td></tr>`;
   }
+}
+
+// Count active leads per agent
+function leadCountFor(adminId){
+  return allLeads.filter(l=>l.status==='active'&&l.assigned_to===adminId).length;
+}
+function unassignedCount(){
+  return allLeads.filter(l=>l.status==='active'&&!l.assigned_to).length;
+}
+
+function renderAssignOverview(){
+  const activeLeadTotal=allLeads.filter(l=>l.status==='active').length||1;
+  const unassigned=unassignedCount();
+  const agents=(allAdmins||[]).filter(a=>a.active);
+  let html='';
+  // Unassigned card first
+  html+=`<div class="ov-card ov-unassigned">
+    <div class="ov-name">📭 Unassigned</div>
+    <div class="ov-count">${unassigned}</div>
+    <div class="ov-bar-track"><div class="ov-bar-fill" style="width:${Math.round(unassigned/activeLeadTotal*100)}%;background:#e74c3c"></div></div>
+    <div class="ov-pct">${Math.round(unassigned/activeLeadTotal*100)}% of active leads</div>
+  </div>`;
+  // Per-admin cards
+  agents.forEach(a=>{
+    const c=leadCountFor(a.id);
+    const pct=Math.round(c/activeLeadTotal*100);
+    const icon=a.role==='owner'?'👑':'🧑‍💼';
+    html+=`<div class="ov-card">
+      <div class="ov-name">${icon} ${esc(a.full_name||a.email)}</div>
+      <div class="ov-count">${c}</div>
+      <div class="ov-bar-track"><div class="ov-bar-fill" style="width:${pct}%"></div></div>
+      <div class="ov-pct">${pct}% of active leads</div>
+    </div>`;
+  });
+  document.getElementById('assign-overview').innerHTML=html;
+
+  // Bulk bar — only show if there are unassigned leads AND active agents
+  const bar=document.getElementById('bulk-assign-bar');
+  const assignableAgents=agents; // owner can assign to anyone active
+  if(unassigned>0 && assignableAgents.length){
+    bar.style.display='flex';
+    document.getElementById('bulk-unassigned-num').textContent=unassigned;
+    document.getElementById('bulk-target').innerHTML='<option value="">Assign all to…</option>'+
+      assignableAgents.map(a=>`<option value="${a.id}">${esc(a.full_name||a.email)} (${leadCountFor(a.id)})</option>`).join('');
+  } else {
+    bar.style.display='none';
+  }
+}
+
+// ── BULK ASSIGN ───────────────────────────────────
+async function bulkAutoDistribute(){
+  const unassigned=allLeads.filter(l=>l.status==='active'&&!l.assigned_to);
+  const agents=(allAdmins||[]).filter(a=>a.active&&a.role==='agent');
+  const pool=agents.length?agents:(allAdmins||[]).filter(a=>a.active); // fallback: all active incl owner
+  if(!unassigned.length){alert('No unassigned leads.');return;}
+  if(!pool.length){alert('No active team members to assign to.');return;}
+  showConfirm({
+    type:'info',icon:'⚖️',title:'Auto-Distribute Leads',
+    text:`Distribute <b>${unassigned.length}</b> unassigned leads evenly across <b>${pool.length}</b> ${agents.length?'agents':'team members'}? This balances by current workload.`,
+    okLabel:'Distribute',
+    onConfirm:async()=>{
+      // Seed counts with current workload so distribution stays balanced
+      const counts={};pool.forEach(a=>counts[a.id]=leadCountFor(a.id));
+      const now=new Date().toISOString();
+      for(const lead of unassigned){
+        // pick agent with fewest
+        const target=pool.reduce((min,a)=>counts[a.id]<counts[min.id]?a:min,pool[0]);
+        counts[target.id]++;
+        lead.assigned_to=target.id;lead.assigned_at=now;
+        try{
+          await sb(`/rest/v1/enquiries?id=eq.${lead.id}`,'PATCH',{assigned_to:target.id,assigned_at:now});
+          await sb('/rest/v1/activity_logs','POST',{enquiry_id:lead.id,note:`👤 Auto-assigned to ${adminName(target.id)}`,logged_by:currentAdmin?currentAdmin.id:null});
+        }catch(e){console.error(e);}
+      }
+      renderAssignOverview();renderLeads();updateStats();
+      alert(`Distributed ${unassigned.length} leads across ${pool.length} members.`);
+    }
+  });
+}
+
+async function bulkAssignToOne(){
+  const targetId=document.getElementById('bulk-target').value;
+  if(!targetId){alert('Pick a team member first.');return;}
+  const unassigned=allLeads.filter(l=>l.status==='active'&&!l.assigned_to);
+  if(!unassigned.length){alert('No unassigned leads.');return;}
+  const who=adminName(targetId);
+  showConfirm({
+    type:'info',icon:'👤',title:'Assign All to '+who,
+    text:`Assign all <b>${unassigned.length}</b> unassigned leads to <b>${esc(who)}</b>?`,
+    okLabel:'Assign All',
+    onConfirm:async()=>{
+      const now=new Date().toISOString();
+      for(const lead of unassigned){
+        lead.assigned_to=targetId;lead.assigned_at=now;
+        try{
+          await sb(`/rest/v1/enquiries?id=eq.${lead.id}`,'PATCH',{assigned_to:targetId,assigned_at:now});
+        }catch(e){console.error(e);}
+      }
+      try{await sb('/rest/v1/activity_logs','POST',{enquiry_id:unassigned[0].id,note:`👤 Bulk-assigned ${unassigned.length} leads to ${who}`,logged_by:currentAdmin?currentAdmin.id:null});}catch(e){}
+      renderAssignOverview();renderLeads();updateStats();
+      alert(`Assigned ${unassigned.length} leads to ${who}.`);
+    }
+  });
 }
 
 function renderAdmins(){
@@ -2132,7 +2281,7 @@ function renderAdmins(){
   if(!allAdmins.length){tb.innerHTML='<tr><td colspan="6" class="empty">No team members yet</td></tr>';return;}
   tb.innerHTML=allAdmins.map(a=>{
     const isMe=currentAdmin&&a.id===currentAdmin.id;
-    const added=new Date(a.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+    const leadCount=leadCountFor(a.id);
     const roleBadge=a.role==='owner'
       ? '<span class="badge badge-enrolled">👑 Owner</span>'
       : '<span class="badge badge-active">🧑‍💼 Agent</span>';
@@ -2143,8 +2292,8 @@ function renderAdmins(){
       <td><div class="td-name">${esc(a.full_name||'—')}${isMe?' <span style="font-size:10px;color:var(--gold2)">(you)</span>':''}</div></td>
       <td><div class="td-email">${esc(a.email)}</div></td>
       <td>${roleBadge}</td>
+      <td><span style="font-family:'Bebas Neue';font-size:18px;color:var(--gold2)">${leadCount}</span> <span style="font-size:11px;color:var(--muted)">active</span></td>
       <td>${statusBadge}</td>
-      <td><div class="td-date">${added}</div></td>
       <td><div class="td-actions">
         ${isMe?'<span style="font-size:11px;color:var(--muted)">—</span>':`
           <button class="act-btn act-edit" data-tip="Reset password" data-tip-pos="left" onclick="openResetPwd('${a.id}')">🔑</button>
