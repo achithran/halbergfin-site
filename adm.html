@@ -414,6 +414,15 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .bulk-one:hover{background:rgba(139,92,246,.25)}
 .bulk-select{background:var(--ink2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-family:'Satoshi',sans-serif;font-size:13px;color:white;outline:none}
 .bulk-select option{background:var(--ink2)}
+/* PERFORMANCE */
+.conv-pill{display:inline-block;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.5px;padding:2px 10px;border-radius:6px}
+.conv-good{background:rgba(46,204,113,.14);color:var(--green)}
+.conv-mid{background:rgba(212,168,67,.14);color:var(--gold2)}
+.conv-low{background:rgba(231,76,60,.12);color:#ff6b5a}
+.conv-na{color:var(--muted);font-size:13px;font-family:'Satoshi'}
+.perf-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--text)}
+.perf-stale{color:#ff6b5a;font-weight:700}
+.perf-zero{color:var(--muted)}
 .wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .wl-item:last-child{border:none}
 .wl-info{flex:1;min-width:0}
@@ -790,6 +799,30 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
         </thead>
         <tbody id="admins-tbody">
           <tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="card-title" style="margin-top:32px">📈 Agent Performance <span style="font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none">· all-time</span></div>
+    <div class="page-sub" style="margin-bottom:4px">Conversion is the bottom line. Activity shows effort — read them together.</div>
+    <div class="table-wrap" style="margin-top:8px">
+      <table>
+        <thead>
+          <tr>
+            <th data-tip="Team member">Agent</th>
+            <th data-tip="Leads ever assigned to them">Assigned</th>
+            <th data-tip="Currently working">Active</th>
+            <th data-tip="Converted to enrolled">Enrolled</th>
+            <th data-tip="Rejected / lost">Rejected</th>
+            <th data-tip="Enrolled ÷ Assigned">Conversion</th>
+            <th data-tip="Their leads untouched 5+ days">Stale</th>
+            <th data-tip="Activity notes logged">Activities</th>
+            <th data-tip="Past-due follow-ups they own">Overdue FU</th>
+          </tr>
+        </thead>
+        <tbody id="perf-tbody">
+          <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)"><span class="spinner"></span>Loading...</td></tr>
         </tbody>
       </table>
     </div>
@@ -2168,6 +2201,7 @@ async function loadAdmins(){
     allAdmins=await sb('/rest/v1/admins?select=*&order=created_at.asc');
     renderAdmins();
     renderAssignOverview();
+    renderPerformance();
   }catch(e){
     tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--red)">${esc(e.message)}</td></tr>`;
   }
@@ -2221,6 +2255,74 @@ function renderAssignOverview(){
 }
 
 // ── BULK ASSIGN ───────────────────────────────────
+// ── AGENT PERFORMANCE ─────────────────────────────
+async function renderPerformance(){
+  const tb=document.getElementById('perf-tbody');
+  const agents=(allAdmins||[]).filter(a=>a.active);
+  if(!agents.length){tb.innerHTML='<tr><td colspan="9" class="empty">No team members</td></tr>';return;}
+
+  // Fetch activity counts (logged_by) + follow-ups (created_by) once
+  let actByAdmin={}, overdueByAdmin={};
+  try{
+    const logs=await sb('/rest/v1/activity_logs?select=logged_by');
+    (logs||[]).forEach(l=>{if(l.logged_by){actByAdmin[l.logged_by]=(actByAdmin[l.logged_by]||0)+1;}});
+  }catch(e){console.error('perf activity error',e);}
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const fus=await sb('/rest/v1/follow_ups?done=eq.false&select=created_by,scheduled_date');
+    (fus||[]).forEach(f=>{if(f.created_by&&f.scheduled_date<today){overdueByAdmin[f.created_by]=(overdueByAdmin[f.created_by]||0)+1;}});
+  }catch(e){console.error('perf fu error',e);}
+
+  const now=Date.now();
+  const rows=agents.map(a=>{
+    const mine=allLeads.filter(l=>l.assigned_to===a.id);
+    const assigned=mine.length;
+    const active=mine.filter(l=>l.status==='active').length;
+    const enrolled=mine.filter(l=>l.status==='enrolled').length;
+    const rejected=mine.filter(l=>l.status==='rejected').length;
+    // Conversion = enrolled / (decided outcomes); use assigned as denominator per spec
+    const conv=assigned?Math.round(enrolled/assigned*100):null;
+    // Stale = their active leads, contacted 5+ days ago OR never contacted & 5+ days old
+    const stale=mine.filter(l=>{
+      if(l.status!=='active') return false;
+      const ref=l.last_contacted||l.created_at;
+      return (now-new Date(ref).getTime())/86400000>=5;
+    }).length;
+    const acts=actByAdmin[a.id]||0;
+    const overdue=overdueByAdmin[a.id]||0;
+    return {a,assigned,active,enrolled,rejected,conv,stale,acts,overdue};
+  });
+  // Sort by conversion desc (nulls last), then enrolled
+  rows.sort((x,y)=>{
+    if(x.conv===null&&y.conv===null) return y.assigned-x.assigned;
+    if(x.conv===null) return 1;
+    if(y.conv===null) return -1;
+    if(y.conv!==x.conv) return y.conv-x.conv;
+    return y.enrolled-x.enrolled;
+  });
+
+  tb.innerHTML=rows.map(r=>{
+    const icon=r.a.role==='owner'?'👑':'🧑‍💼';
+    let convCell;
+    if(r.conv===null){convCell='<span class="conv-na">—</span>';}
+    else{
+      const cls=r.conv>=30?'conv-good':r.conv>=15?'conv-mid':'conv-low';
+      convCell=`<span class="conv-pill ${cls}">${r.conv}%</span>`;
+    }
+    return `<tr>
+      <td><div class="td-name">${icon} ${esc(r.a.full_name||r.a.email)}</div></td>
+      <td><span class="perf-num">${r.assigned}</span></td>
+      <td><span class="perf-num">${r.active}</span></td>
+      <td><span class="perf-num" style="color:var(--purple)">${r.enrolled}</span></td>
+      <td><span class="perf-num ${r.rejected?'':'perf-zero'}">${r.rejected}</span></td>
+      <td>${convCell}</td>
+      <td><span class="${r.stale?'perf-stale':'perf-zero'}">${r.stale}</span></td>
+      <td><span class="perf-num ${r.acts?'':'perf-zero'}">${r.acts}</span></td>
+      <td><span class="${r.overdue?'perf-stale':'perf-zero'}">${r.overdue}</span></td>
+    </tr>`;
+  }).join('');
+}
+
 async function bulkAutoDistribute(){
   const unassigned=allLeads.filter(l=>l.status==='active'&&!l.assigned_to);
   const agents=(allAdmins||[]).filter(a=>a.active&&a.role==='agent');
