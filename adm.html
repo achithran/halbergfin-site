@@ -389,6 +389,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .assign-select:focus{border-color:rgba(212,168,67,.4)}
 .assign-select option{background:var(--ink2)}
 .assigned-tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(139,92,246,.12);color:var(--purple);border:1px solid rgba(139,92,246,.25)}
+.claim-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.3);cursor:pointer;font-family:'Satoshi',sans-serif;transition:all .2s}
+.claim-btn:hover{background:rgba(46,204,113,.22)}
+.assigned-other{font-size:11px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
 .wl-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .wl-item:last-child{border:none}
 .wl-info{flex:1;min-width:0}
@@ -1097,11 +1100,26 @@ function adminName(id){
 }
 // Build assignment dropdown <select> HTML for a lead
 function assignSelectHTML(lead){
-  const opts=['<option value="">Unassigned</option>']
-    .concat((allAdmins||[]).filter(a=>a.active).map(a=>
-      `<option value="${a.id}" ${lead.assigned_to===a.id?'selected':''}>${esc(a.full_name||a.email)}</option>`
-    ));
-  return `<select class="assign-select" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignLead('${lead.id}',this.value)">${opts.join('')}</select>`;
+  const isOwner=currentAdmin&&currentAdmin.role==='owner';
+  // OWNER — full dropdown, can assign/reassign to anyone
+  if(isOwner){
+    const opts=['<option value="">Unassigned</option>']
+      .concat((allAdmins||[]).filter(a=>a.active).map(a=>
+        `<option value="${a.id}" ${lead.assigned_to===a.id?'selected':''}>${esc(a.full_name||a.email)}</option>`
+      ));
+    return `<select class="assign-select" onclick="event.stopPropagation()" onchange="event.stopPropagation();assignLead('${lead.id}',this.value)">${opts.join('')}</select>`;
+  }
+  // AGENT — restricted
+  if(!lead.assigned_to){
+    // Unassigned → can claim it
+    return `<button class="claim-btn" onclick="event.stopPropagation();claimLead('${lead.id}')">+ Claim</button>`;
+  }
+  if(lead.assigned_to===currentAdmin.id){
+    // Their own lead → show "Mine" + option to release
+    return `<span class="assigned-tag" data-tip="Your lead — click to release" onclick="event.stopPropagation();releaseLead('${lead.id}')" style="cursor:pointer">👤 Mine ✕</span>`;
+  }
+  // Someone else's lead → read-only, just show who
+  return `<span class="assigned-other">👤 ${esc(adminName(lead.assigned_to))}</span>`;
 }
 
 // ── STATS + FUNNEL ────────────────────────────────
@@ -1348,13 +1366,46 @@ async function assignLead(id,adminId){
   lead.assigned_at=newAssignee?new Date().toISOString():null;
   try{
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{assigned_to:newAssignee,assigned_at:lead.assigned_at});
-    // Log the assignment as activity
     if(newAssignee){
       const who=adminName(newAssignee);
       await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Assigned to ${who}`,logged_by:currentAdmin?currentAdmin.id:null});
     }
     if(leadsViewMode==='mine') renderLeads();
   }catch(e){alert('Error: '+e.message);loadData();}
+}
+
+// Agent claims an unassigned lead (assigns to self)
+async function claimLead(id){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead||!currentAdmin) return;
+  if(lead.assigned_to){alert('This lead is already assigned.');return;}
+  lead.assigned_to=currentAdmin.id;
+  lead.assigned_at=new Date().toISOString();
+  renderLeads();
+  try{
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{assigned_to:currentAdmin.id,assigned_at:lead.assigned_at});
+    await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Claimed by ${currentAdmin.full_name||currentAdmin.email}`,logged_by:currentAdmin.id});
+  }catch(e){alert('Error: '+e.message);loadData();}
+}
+
+// Agent releases their own lead back to the pool
+function releaseLead(id){
+  const lead=allLeads.find(l=>l.id===id);
+  if(!lead||!currentAdmin) return;
+  if(lead.assigned_to!==currentAdmin.id){alert("You can only release your own leads.");return;}
+  showConfirm({
+    type:'warn',icon:'↩️',title:'Release Lead',
+    text:`Release <b>${esc(lead.first_name)} ${esc(lead.last_name||'')}</b> back to the unassigned pool? Another team member can then claim it.`,
+    okLabel:'Release',
+    onConfirm:async()=>{
+      lead.assigned_to=null;lead.assigned_at=null;
+      renderLeads();
+      try{
+        await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{assigned_to:null,assigned_at:null});
+        await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`↩️ Released back to pool by ${currentAdmin.full_name||currentAdmin.email}`,logged_by:currentAdmin.id});
+      }catch(e){alert('Error: '+e.message);loadData();}
+    }
+  });
 }
 
 // ── NEXT ACTION INLINE EDIT ───────────────────────
