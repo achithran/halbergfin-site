@@ -125,6 +125,18 @@ tbody tr.prio-row-cold{border-left:3px solid #60a5fa}
 .tb-refresh{background:rgba(212,168,67,.1);color:var(--gold)}.tb-refresh:hover{background:rgba(212,168,67,.2)}
 .tb-add{background:var(--gold);color:var(--ink);border-color:var(--gold)}.tb-add:hover{background:var(--gold2)}
 .tb-logout{background:transparent;color:rgba(255,255,255,.4)}.tb-logout:hover{border-color:var(--red);color:var(--red)}
+.tb-security{background:rgba(255,255,255,.04);color:var(--muted)}.tb-security:hover{border-color:var(--gold);color:var(--gold)}
+/* MFA */
+.mfa-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;margin-bottom:16px}
+.mfa-on{background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.3)}
+.mfa-off{background:rgba(231,76,60,.1);color:#ff8577;border:1px solid rgba(231,76,60,.25)}
+.mfa-qr{display:block;margin:16px auto;background:white;padding:12px;border-radius:12px;width:200px;height:200px}
+.mfa-secret{font-family:monospace;font-size:13px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;letter-spacing:2px;color:var(--gold2);margin:10px 0;word-break:break-all}
+.mfa-step{font-size:13px;color:var(--muted);margin:14px 0 8px}
+.mfa-code-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:14px;font-family:monospace;font-size:22px;letter-spacing:8px;text-align:center;color:white;outline:none}
+.mfa-msg{font-size:12px;padding:10px;border-radius:8px;margin-top:10px;display:none}
+.mfa-msg.error{display:block;background:rgba(231,76,60,.1);color:#ff8577}
+.mfa-msg.success{display:block;background:rgba(46,204,113,.1);color:var(--green)}
 
 /* TABS */
 .tabs{display:flex;gap:4px;padding:20px 32px 0;border-bottom:1px solid var(--border);background:var(--ink2)}
@@ -548,6 +560,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="Sound alerts for new leads">🔔 Off</button>
       <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
       <button class="tb-btn tb-refresh" onclick="loadData()" data-tip="Refresh all data">↻ Refresh</button>
+      <button class="tb-btn tb-security" onclick="openSecurityModal()" data-tip="Two-factor authentication">🔒 Security</button>
       <button class="tb-btn tb-logout" onclick="logout()" data-tip="Sign out">Sign Out</button>
     </div>
   </div>
@@ -1193,6 +1206,7 @@ async function onAuthSuccess(session){
   const btn=document.getElementById('login-btn');if(btn){btn.textContent='→ Sign In';btn.disabled=false;}
   showCurrentAdmin();
   loadData();
+  startIdleTimer();
 }
 
 function showCurrentAdmin(){
@@ -1225,9 +1239,50 @@ function dismissSysBanner(){
 }
 
 async function logout(){
+  stopIdleTimer();
   try{await sbClient.auth.signOut();}catch(e){}
   currentAdmin=null;_accessToken=SUPABASE_ANON;
   location.reload();
+}
+
+// ── AUTO-LOGOUT ON INACTIVITY (15 min) ────────────
+const IDLE_LIMIT_MS=15*60*1000; // 15 minutes
+let idleTimer=null;
+let idleWarnTimer=null;
+
+function resetIdleTimer(){
+  if(!currentAdmin) return;
+  clearTimeout(idleTimer);
+  clearTimeout(idleWarnTimer);
+  // Warn 1 minute before logout
+  idleWarnTimer=setTimeout(showIdleWarning,IDLE_LIMIT_MS-60000);
+  idleTimer=setTimeout(doIdleLogout,IDLE_LIMIT_MS);
+}
+function stopIdleTimer(){
+  clearTimeout(idleTimer);clearTimeout(idleWarnTimer);
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(ev=>document.removeEventListener(ev,onUserActivity));
+}
+function onUserActivity(){
+  const toast=document.getElementById('idle-warn');
+  if(toast) toast.remove();
+  resetIdleTimer();
+}
+function startIdleTimer(){
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(ev=>document.addEventListener(ev,onUserActivity,{passive:true}));
+  resetIdleTimer();
+}
+function showIdleWarning(){
+  if(document.getElementById('idle-warn')) return;
+  const t=document.createElement('div');
+  t.id='idle-warn';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;background:#1a2035;border:1px solid rgba(212,168,67,.4);border-radius:12px;padding:14px 22px;box-shadow:0 16px 48px rgba(0,0,0,.6);font-size:13px;color:#f0c84a';
+  t.textContent='⏳ You will be signed out in 1 minute due to inactivity. Move your mouse to stay logged in.';
+  document.body.appendChild(t);
+}
+async function doIdleLogout(){
+  const t=document.getElementById('idle-warn');if(t)t.remove();
+  alert('You have been signed out due to 15 minutes of inactivity.');
+  await logout();
 }
 
 // Auto-restore session on page load
@@ -2800,6 +2855,110 @@ function deleteAdmin(id,name){
   });
 }
 
+// ── MFA / 2FA ─────────────────────────────────────
+let mfaEnrollData=null; // holds {factorId, qr, secret} during enrollment
+
+async function openSecurityModal(){
+  openModal('modal-security');
+  await renderMfaStatus();
+}
+
+async function renderMfaStatus(){
+  const view=document.getElementById('mfa-status-view');
+  view.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><span class="spinner"></span>Checking status...</div>';
+  try{
+    const {data,error}=await sbClient.auth.mfa.listFactors();
+    if(error) throw error;
+    const verified=(data.totp||[]).filter(f=>f.status==='verified');
+    if(verified.length){
+      // MFA is ON
+      view.innerHTML=`
+        <div class="mfa-badge mfa-on">✅ Two-factor authentication is ON</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">Your account is protected. When you log in, you'll be asked for a 6-digit code from your authenticator app.</p>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="closeModal('modal-security')">Close</button>
+          <button class="btn-primary" style="background:var(--red);color:white" onclick="disableMfa('${verified[0].id}')">Disable 2FA</button>
+        </div>`;
+    } else {
+      // MFA is OFF — offer to enable
+      view.innerHTML=`
+        <div class="mfa-badge mfa-off">○ Two-factor authentication is OFF</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">Add a second layer of security. You'll need an authenticator app like Google Authenticator, Authy, or Microsoft Authenticator on your phone.</p>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="closeModal('modal-security')">Cancel</button>
+          <button class="btn-primary" onclick="startMfaEnroll()">Enable 2FA</button>
+        </div>`;
+    }
+  }catch(e){
+    view.innerHTML=`<div class="mfa-msg error" style="display:block">${esc(e.message||'Could not load MFA status')}</div>
+      <div class="form-actions"><button class="btn-secondary" onclick="closeModal('modal-security')">Close</button></div>`;
+  }
+}
+
+async function startMfaEnroll(){
+  const view=document.getElementById('mfa-status-view');
+  view.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)"><span class="spinner"></span>Generating QR code...</div>';
+  try{
+    // Clean up any unverified leftover factors first
+    const {data:list}=await sbClient.auth.mfa.listFactors();
+    const stale=(list?.all||[]).filter(f=>f.status==='unverified');
+    for(const f of stale){try{await sbClient.auth.mfa.unenroll({factorId:f.id});}catch(e){}}
+
+    const {data,error}=await sbClient.auth.mfa.enroll({factorType:'totp'});
+    if(error) throw error;
+    mfaEnrollData={factorId:data.id,qr:data.totp.qr_code,secret:data.totp.secret};
+    view.innerHTML=`
+      <div class="mfa-step">1. Scan this QR code with your authenticator app:</div>
+      <img class="mfa-qr" src="${data.totp.qr_code}" alt="QR code"/>
+      <div class="mfa-step">Or enter this key manually:</div>
+      <div class="mfa-secret">${esc(data.totp.secret)}</div>
+      <div class="mfa-step">2. Enter the 6-digit code from your app:</div>
+      <input class="mfa-code-input" id="mfa-verify-code" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="off"/>
+      <div class="mfa-msg" id="mfa-enroll-msg"></div>
+      <div class="form-actions">
+        <button class="btn-secondary" onclick="renderMfaStatus()">Cancel</button>
+        <button class="btn-primary" id="mfa-verify-btn" onclick="verifyMfaEnroll()">Verify &amp; Enable</button>
+      </div>`;
+    setTimeout(()=>document.getElementById('mfa-verify-code')?.focus(),100);
+  }catch(e){
+    view.innerHTML=`<div class="mfa-msg error" style="display:block">${esc(e.message||'Enrollment failed')}</div>
+      <div class="form-actions"><button class="btn-secondary" onclick="renderMfaStatus()">Back</button></div>`;
+  }
+}
+
+async function verifyMfaEnroll(){
+  const code=(document.getElementById('mfa-verify-code').value||'').trim();
+  const msg=document.getElementById('mfa-enroll-msg');
+  if(code.length!==6){msg.className='mfa-msg error';msg.textContent='Enter the 6-digit code.';return;}
+  const btn=document.getElementById('mfa-verify-btn');btn.textContent='Verifying...';btn.disabled=true;
+  try{
+    const {data:chal,error:chalErr}=await sbClient.auth.mfa.challenge({factorId:mfaEnrollData.factorId});
+    if(chalErr) throw chalErr;
+    const {error:verErr}=await sbClient.auth.mfa.verify({factorId:mfaEnrollData.factorId,challengeId:chal.id,code});
+    if(verErr) throw verErr;
+    msg.className='mfa-msg success';msg.textContent='✓ Two-factor authentication enabled!';
+    setTimeout(renderMfaStatus,1200);
+  }catch(e){
+    msg.className='mfa-msg error';msg.textContent=e.message||'Invalid code, try again.';
+    btn.textContent='Verify & Enable';btn.disabled=false;
+  }
+}
+
+function disableMfa(factorId){
+  showConfirm({
+    type:'danger',icon:'🔓',title:'Disable 2FA',
+    text:'Remove two-factor authentication from your account? Your account will be less secure.',
+    okLabel:'Disable',
+    onConfirm:async()=>{
+      try{
+        const {error}=await sbClient.auth.mfa.unenroll({factorId});
+        if(error) throw error;
+        renderMfaStatus();
+      }catch(e){alert(e.message);}
+    }
+  });
+}
+
 // ── UTILS ─────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function fmtDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
@@ -3009,6 +3168,21 @@ document.addEventListener('DOMContentLoaded',initCCDropdown);
       <div class="form-actions">
         <button class="btn-secondary" onclick="closeModal('modal-admin')">Cancel</button>
         <button class="btn-primary" id="adm-save-btn" onclick="saveAdmin()">Create Member</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY / MFA MODAL -->
+<div class="modal-overlay" id="modal-security">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔒 Two-Factor Authentication</div>
+      <button class="modal-close" onclick="closeModal('modal-security')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="mfa-status-view">
+        <div style="text-align:center;padding:20px;color:var(--muted)"><span class="spinner"></span>Checking status...</div>
       </div>
     </div>
   </div>
