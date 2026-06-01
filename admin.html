@@ -57,6 +57,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .tb-bell{background:rgba(255,255,255,.04);color:var(--muted)}
 .tb-bell:hover{border-color:var(--gold);color:var(--gold)}
 .tb-bell.on{background:rgba(46,204,113,.12);color:var(--green);border-color:rgba(46,204,113,.3)}
+/* NOTIFICATION CENTER */
+.notif-center{position:relative}
+.notif-bell{position:relative;background:rgba(255,255,255,.04);color:var(--text);min-width:auto;padding:8px 12px;font-size:15px}
+.notif-bell:hover{border-color:var(--gold);color:var(--gold)}
+.notif-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:white;font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--ink)}
+.notif-panel{position:absolute;top:calc(100% + 10px);right:0;width:340px;max-height:440px;background:#1a2035;border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);z-index:9999;overflow:hidden;display:flex;flex-direction:column}
+.notif-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;font-weight:700;color:white}
+.notif-mark-all{background:none;border:none;color:var(--gold2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Satoshi',sans-serif}
+.notif-mark-all:hover{text-decoration:underline}
+.notif-list{overflow-y:auto;max-height:380px}
+.notif-item{display:flex;gap:10px;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.notif-item:hover{background:rgba(255,255,255,.03)}
+.notif-item.unread{background:rgba(212,168,67,.06)}
+.notif-item.unread::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:5px}
+.notif-item.read::before{content:'';width:7px;height:7px;flex-shrink:0}
+.notif-body-wrap{flex:1;min-width:0}
+.notif-title{font-size:13px;font-weight:600;color:white;margin-bottom:2px}
+.notif-sub{font-size:11px;color:var(--muted)}
+.notif-time{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px}
+.notif-empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:12px}
 /* DAYS-SINCE BADGE */
 .days-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.3px;margin-left:8px}
 .days-fresh{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
@@ -476,7 +496,21 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="tb-right">
       <span id="current-admin-label" style="font-size:11px;color:var(--gold2);font-weight:600"></span>
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
-      <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="New-lead alerts">🔔 Off</button>
+      <div class="notif-center">
+        <button class="tb-btn notif-bell" id="notif-bell" onclick="toggleNotifPanel(event)" data-tip="Notifications">
+          🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span>
+        </button>
+        <div class="notif-panel" id="notif-panel" style="display:none">
+          <div class="notif-head">
+            <span>Notifications</span>
+            <button class="notif-mark-all" onclick="markAllNotifsRead()">Mark all read</button>
+          </div>
+          <div class="notif-list" id="notif-list">
+            <div class="notif-empty">No notifications</div>
+          </div>
+        </div>
+      </div>
+      <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="Sound alerts for new leads">🔔 Off</button>
       <button class="tb-btn tb-add" onclick="openAddModal()" data-tip="Add a phone enquiry manually">+ Add Lead</button>
       <button class="tb-btn tb-refresh" onclick="loadData()" data-tip="Refresh all data">↻ Refresh</button>
       <button class="tb-btn tb-logout" onclick="logout()" data-tip="Sign out">Sign Out</button>
@@ -1165,6 +1199,7 @@ async function loadData(){
     loadUpcomingFU();
     initNotifyState();
     if(notifyOn) startPolling();
+    startNotifPolling();
   }catch(e){
     console.error(e);
   }
@@ -1945,6 +1980,103 @@ function daysSinceBadge(createdAt){
   if(days<=3) return `<span class="days-badge days-warn">${days} days ago</span>`;
   return `<span class="days-badge days-cold">⚠ ${days} days ago</span>`;
 }
+
+// ── NOTIFICATION CENTER (persistent, DB-backed) ──
+let myNotifs=[];
+let notifPollTimer=null;
+
+async function loadNotifs(){
+  if(!currentAdmin) return;
+  try{
+    myNotifs=await sb(`/rest/v1/notifications?admin_id=eq.${currentAdmin.id}&order=created_at.desc&limit=30`);
+    renderNotifs();
+  }catch(e){console.error('loadNotifs error:',e);}
+}
+
+function renderNotifs(){
+  const unread=myNotifs.filter(n=>!n.read).length;
+  const badge=document.getElementById('notif-badge');
+  if(badge){
+    badge.textContent=unread>9?'9+':unread;
+    badge.style.display=unread>0?'flex':'none';
+  }
+  const list=document.getElementById('notif-list');
+  if(!list) return;
+  if(!myNotifs.length){
+    list.innerHTML='<div class="notif-empty">No notifications yet</div>';
+    return;
+  }
+  list.innerHTML=myNotifs.map(n=>`
+    <div class="notif-item ${n.read?'read':'unread'}" onclick="openNotif('${n.id}','${n.lead_id||''}')">
+      <div class="notif-body-wrap">
+        <div class="notif-title">${esc(n.title)}</div>
+        ${n.body?`<div class="notif-sub">${esc(n.body)}</div>`:''}
+        <div class="notif-time">${notifTime(n.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function notifTime(ts){
+  const diff=Math.floor((Date.now()-new Date(ts).getTime())/60000); // minutes
+  if(diff<1) return 'Just now';
+  if(diff<60) return `${diff}m ago`;
+  if(diff<1440) return `${Math.floor(diff/60)}h ago`;
+  return new Date(ts).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+function toggleNotifPanel(e){
+  if(e) e.stopPropagation();
+  const panel=document.getElementById('notif-panel');
+  const showing=panel.style.display!=='none';
+  panel.style.display=showing?'none':'block';
+  if(!showing) loadNotifs(); // refresh on open
+}
+
+// Close panel when clicking outside
+document.addEventListener('click',(e)=>{
+  const center=document.querySelector('.notif-center');
+  const panel=document.getElementById('notif-panel');
+  if(panel&&panel.style.display!=='none'&&center&&!center.contains(e.target)){
+    panel.style.display='none';
+  }
+});
+
+async function openNotif(id,leadId){
+  // Mark read
+  const n=myNotifs.find(x=>x.id===id);
+  if(n&&!n.read){
+    n.read=true;
+    renderNotifs();
+    try{await sb(`/rest/v1/notifications?id=eq.${id}`,'PATCH',{read:true});}catch(e){console.error(e);}
+  }
+  // Jump to the lead
+  if(leadId){
+    document.getElementById('notif-panel').style.display='none';
+    const lead=allLeads.find(l=>l.id===leadId);
+    if(lead){
+      // Open the right tab based on status then open the lead's activity modal
+      switchTab(lead.status==='active'?'leads':'enquiries');
+      setTimeout(()=>openActivityModal(leadId),200);
+    }
+  }
+}
+
+async function markAllNotifsRead(){
+  const unread=myNotifs.filter(n=>!n.read);
+  if(!unread.length) return;
+  unread.forEach(n=>n.read=true);
+  renderNotifs();
+  try{
+    await sb(`/rest/v1/notifications?admin_id=eq.${currentAdmin.id}&read=eq.false`,'PATCH',{read:true});
+  }catch(e){console.error('markAll error:',e);}
+}
+
+function startNotifPolling(){
+  stopNotifPolling();
+  loadNotifs();
+  notifPollTimer=setInterval(loadNotifs,30000); // every 30s
+}
+function stopNotifPolling(){if(notifPollTimer){clearInterval(notifPollTimer);notifPollTimer=null;}}
 
 // ── NEW-LEAD NOTIFICATIONS ────────────────────────
 let notifyOn=sessionStorage.getItem('hf_notify')==='1';

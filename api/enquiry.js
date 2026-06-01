@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   }
 
   // ── NEW ENQUIRY: save to Supabase ────────────────
-  const { error: dbError } = await supabase.from('enquiries').insert([{
+  const { data: inserted, error: dbError } = await supabase.from('enquiries').insert([{
     first_name,
     last_name,
     email,
@@ -77,11 +77,32 @@ export default async function handler(req, res) {
     course_interest,
     experience,
     message
-  }]);
+  }]).select('id').single();
 
   if (dbError) {
     console.error('Supabase error:', dbError);
     return res.status(500).json({ error: 'Database error', detail: dbError.message });
+  }
+
+  // ── CREATE IN-APP NOTIFICATIONS FOR ALL ACTIVE ADMINS ──
+  // New leads go to the shared pool — notify everyone so the first available can claim.
+  try {
+    const { data: admins } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('active', true);
+    if (admins && admins.length && inserted) {
+      const rows = admins.map(a => ({
+        admin_id: a.id,
+        type: 'new_lead',
+        title: `🎯 New lead: ${first_name} ${last_name || ''}`.trim(),
+        body: `${course_interest || 'No course selected'}${whatsapp ? ' · ' + whatsapp : ''}`,
+        lead_id: inserted.id
+      }));
+      await supabase.from('notifications').insert(rows);
+    }
+  } catch (e) {
+    console.error('Notification insert error (non-fatal):', e);
   }
 
   // Send notification email to admin (new leads only)
