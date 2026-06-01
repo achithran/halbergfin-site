@@ -82,6 +82,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .notif-foot button:hover{text-decoration:underline}
 /* NOTIF FILTER BAR */
 .notif-filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.audit-filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+.audit-item{display:flex;align-items:center;gap:14px;background:var(--ink2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.audit-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:rgba(255,255,255,.05)}
+.audit-main{flex:1;min-width:0}
+.audit-who{font-size:13px;color:white;font-weight:600}
+.audit-who b{color:var(--gold2)}
+.audit-detail{font-size:12px;color:var(--muted);margin-top:1px}
+.audit-time{font-size:11px;color:rgba(255,255,255,.35);white-space:nowrap}
 .nf-btn{padding:7px 14px;border-radius:8px;background:var(--ink2);border:1px solid var(--border);color:var(--muted);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
 .nf-btn.active{background:var(--gold);color:var(--ink);border-color:var(--gold)}
 .nf-btn:not(.active):hover{color:var(--text)}
@@ -598,6 +606,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="tab" id="tab-btn-admins" onclick="switchTab('admins')" data-tip-pos="bottom" data-tip="Manage team members" style="display:none">
       👥 Team
     </div>
+    <div class="tab" id="tab-btn-audit" onclick="switchTab('audit')" data-tip-pos="bottom" data-tip="Activity across the system" style="display:none">
+      📜 Audit
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════
@@ -621,6 +632,35 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <button class="nf-btn" data-nf="system" onclick="setNotifFilter('system')">⚙️ System</button>
     </div>
     <div id="notif-archive-list" style="margin-top:16px">
+      <div class="notif-empty">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       AUDIT LOG (owner only)
+  ═══════════════════════════════════════ -->
+  <div id="tab-audit" class="main" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+      <div>
+        <div class="page-title">Audit Log</div>
+        <div class="page-sub">Recent activity across all leads and team members</div>
+      </div>
+      <button class="tb-btn tb-refresh" onclick="loadAudit()" data-tip="Reload">↻ Refresh</button>
+    </div>
+    <div class="audit-filter-bar">
+      <select class="filter-select" id="audit-filter-admin" onchange="renderAudit()">
+        <option value="">All team members</option>
+      </select>
+      <select class="filter-select" id="audit-filter-type" onchange="renderAudit()">
+        <option value="">All actions</option>
+        <option value="assign">Assignments</option>
+        <option value="status">Status changes</option>
+        <option value="note">Notes / calls</option>
+        <option value="claim">Claims / releases</option>
+      </select>
+      <span class="leads-count" id="audit-count"></span>
+    </div>
+    <div id="audit-list" style="margin-top:16px">
       <div class="notif-empty">Loading...</div>
     </div>
   </div>
@@ -1279,6 +1319,8 @@ function showCurrentAdmin(){
   // Owners see the Team tab
   const teamTab=document.getElementById('tab-btn-admins');
   if(teamTab) teamTab.style.display=currentAdmin.role==='owner'?'block':'none';
+  const auditTab=document.getElementById('tab-btn-audit');
+  if(auditTab) auditTab.style.display=currentAdmin.role==='owner'?'block':'none';
   // System health banner — owners only, until email domain is verified
   maybeShowSysBanner();
 }
@@ -1366,7 +1408,7 @@ async function doIdleLogout(){
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
-  ['today','enquiries','leads','enrolled','rejected','followups','admins','notifications'].forEach(t=>{
+  ['today','enquiries','leads','enrolled','rejected','followups','admins','notifications','audit'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
     const btn=document.getElementById('tab-btn-'+t);
     if(el) el.style.display=t===tab?'block':'none';
@@ -1380,6 +1422,7 @@ function switchTab(tab){
   if(tab==='rejected') renderRejected();
   if(tab==='enquiries') renderEnquiries();
   if(tab==='admins') loadAdmins();
+  if(tab==='audit') loadAudit();
 }
 
 // ── SUPABASE ──────────────────────────────────────
@@ -2596,6 +2639,66 @@ function renderWLFU(listId,countId,fus){
         <button class="act-btn act-wa" data-tip="Send WhatsApp" data-tip-pos="left" onclick="openWAModal('${e.id}')">💬</button>
         <button class="act-btn act-approve" data-tip="Mark done" data-tip-pos="left" onclick="confirmFUDone('${fu.id}')">✓</button>
       </div>
+    </div>`;
+  }).join('');
+}
+
+// ── AUDIT LOG (owner only) ────────────────────────
+let auditEntries=[];
+async function loadAudit(){
+  const list=document.getElementById('audit-list');
+  list.innerHTML='<div class="notif-empty"><span class="spinner"></span> Loading activity...</div>';
+  try{
+    // Ensure admins are loaded (for name lookup + filter dropdown)
+    if(!allAdmins||!allAdmins.length){try{allAdmins=await sb('/rest/v1/admins?select=*');}catch(e){}}
+    // Pull recent activity across all leads (owner RLS sees all)
+    auditEntries=await sb('/rest/v1/activity_logs?select=*&order=logged_at.desc&limit=200');
+    // Populate admin filter
+    const sel=document.getElementById('audit-filter-admin');
+    if(sel&&sel.options.length<=1){
+      (allAdmins||[]).forEach(a=>{
+        const o=document.createElement('option');o.value=a.id;o.textContent=a.full_name||a.email;sel.appendChild(o);
+      });
+    }
+    renderAudit();
+  }catch(e){
+    list.innerHTML=`<div class="notif-empty" style="color:var(--red)">${esc(e.message)}</div>`;
+  }
+}
+
+function auditClassify(note){
+  const n=(note||'').toLowerCase();
+  if(n.includes('assigned')||n.includes('auto-assign')) return {type:'assign',ico:'👤',bg:'rgba(139,92,246,.15)'};
+  if(n.includes('claimed')||n.includes('released')) return {type:'claim',ico:'🙋',bg:'rgba(46,204,113,.15)'};
+  if(n.includes('enrolled')||n.includes('rejected')||n.includes('status')||n.includes('converted')) return {type:'status',ico:'🔄',bg:'rgba(212,168,67,.15)'};
+  return {type:'note',ico:'📝',bg:'rgba(255,255,255,.06)'};
+}
+
+function leadName(leadId){
+  const l=allLeads.find(x=>x.id===leadId);
+  return l?`${l.first_name||''} ${l.last_name||''}`.trim()||'a lead':'a lead';
+}
+
+function renderAudit(){
+  const list=document.getElementById('audit-list');
+  const fAdmin=document.getElementById('audit-filter-admin').value;
+  const fType=document.getElementById('audit-filter-type').value;
+  let items=auditEntries.map(e=>({...e,_c:auditClassify(e.note)}));
+  if(fAdmin) items=items.filter(e=>e.logged_by===fAdmin);
+  if(fType) items=items.filter(e=>e._c.type===fType);
+  document.getElementById('audit-count').textContent=`${items.length} entries`;
+  if(!items.length){list.innerHTML='<div class="notif-empty">No activity matches these filters</div>';return;}
+  list.innerHTML=items.map(e=>{
+    const who=e.logged_by?(adminName(e.logged_by)):'System';
+    const when=new Date(e.logged_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const ln=leadName(e.enquiry_id);
+    return `<div class="audit-item">
+      <div class="audit-ico" style="background:${e._c.bg}">${e._c.ico}</div>
+      <div class="audit-main">
+        <div class="audit-who"><b>${esc(who)}</b> · ${esc(ln)}</div>
+        <div class="audit-detail">${esc(e.note||'')}</div>
+      </div>
+      <div class="audit-time">${when}</div>
     </div>`;
   }).join('');
 }
