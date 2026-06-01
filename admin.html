@@ -130,7 +130,8 @@ tbody tr.prio-row-cold{border-left:3px solid #60a5fa}
 .mfa-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 12px;border-radius:7px;margin-bottom:16px}
 .mfa-on{background:rgba(46,204,113,.12);color:var(--green);border:1px solid rgba(46,204,113,.3)}
 .mfa-off{background:rgba(231,76,60,.1);color:#ff8577;border:1px solid rgba(231,76,60,.25)}
-.mfa-qr{display:block;margin:16px auto;background:white;padding:12px;border-radius:12px;width:200px;height:200px}
+.mfa-qr{display:flex;align-items:center;justify-content:center;margin:16px auto;background:white;padding:12px;border-radius:12px;width:200px;height:200px;box-sizing:border-box}
+.mfa-qr svg,.mfa-qr img{width:100%;height:100%;display:block}
 .mfa-secret{font-family:monospace;font-size:13px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;letter-spacing:2px;color:var(--gold2);margin:10px 0;word-break:break-all}
 .mfa-step{font-size:13px;color:var(--muted);margin:14px 0 8px}
 .mfa-code-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(212,168,67,.4);border-radius:10px;padding:14px;font-family:monospace;font-size:22px;letter-spacing:8px;text-align:center;color:white;outline:none}
@@ -514,12 +515,22 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
   <div class="login-box">
     <div class="login-logo">HALBERG FIN</div>
     <div class="login-sub">Admin Dashboard</div>
-    <label class="login-label">Email</label>
-    <input class="login-input" type="email" id="login-email" placeholder="you@halbergfin.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()"/>
-    <label class="login-label">Password</label>
-    <input class="login-input" type="password" id="login-pwd" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">→ Sign In</button>
-    <div class="login-err" id="login-err">Incorrect email or password</div>
+    <div id="login-step1">
+      <label class="login-label">Email</label>
+      <input class="login-input" type="email" id="login-email" placeholder="you@halbergfin.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()"/>
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="login-pwd" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">→ Sign In</button>
+      <div class="login-err" id="login-err">Incorrect email or password</div>
+    </div>
+    <div id="login-step2" style="display:none">
+      <label class="login-label">🔒 Two-Factor Code</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Enter the 6-digit code from your authenticator app</div>
+      <input class="login-input" type="text" id="login-mfa-code" maxlength="6" inputmode="numeric" placeholder="000000" autocomplete="one-time-code" style="font-family:monospace;font-size:20px;letter-spacing:6px;text-align:center" onkeydown="if(event.key==='Enter')verifyLoginMfa()"/>
+      <button class="login-btn" id="login-mfa-btn" onclick="verifyLoginMfa()">→ Verify</button>
+      <div class="login-err" id="login-mfa-err">Invalid code</div>
+      <button onclick="cancelMfaLogin()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:12px;width:100%">← Back to login</button>
+    </div>
   </div>
 </div>
 
@@ -1165,12 +1176,64 @@ async function doLogin(){
   try{
     const {data,error}=await sbClient.auth.signInWithPassword({email,password:pwd});
     if(error) throw error;
+    // Check if this account needs a second factor
+    const {data:aal}=await sbClient.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal && aal.nextLevel==='aal2' && aal.nextLevel!==aal.currentLevel){
+      // MFA required — show the code step
+      showMfaLoginStep();
+      btn.textContent='→ Sign In';btn.disabled=false;
+      return;
+    }
     await onAuthSuccess(data.session);
   }catch(e){
     errEl.textContent=e.message||'Incorrect email or password';
     errEl.style.display='block';
     setTimeout(()=>errEl.style.display='none',3500);
     btn.textContent='→ Sign In';btn.disabled=false;
+  }
+}
+
+// ── MFA LOGIN CHALLENGE ───────────────────────────
+function showMfaLoginStep(){
+  document.getElementById('login-step1').style.display='none';
+  document.getElementById('login-step2').style.display='block';
+  document.getElementById('login-mfa-err').style.display='none';
+  const c=document.getElementById('login-mfa-code');c.value='';
+  setTimeout(()=>c.focus(),100);
+}
+function cancelMfaLogin(){
+  // Sign out the half-authenticated session and return to password screen
+  sbClient.auth.signOut().catch(()=>{});
+  document.getElementById('login-step2').style.display='none';
+  document.getElementById('login-step1').style.display='block';
+  document.getElementById('login-pwd').value='';
+}
+async function verifyLoginMfa(){
+  const code=(document.getElementById('login-mfa-code').value||'').trim();
+  const errEl=document.getElementById('login-mfa-err');
+  const btn=document.getElementById('login-mfa-btn');
+  if(code.length!==6){errEl.textContent='Enter the 6-digit code';errEl.style.display='block';return;}
+  btn.textContent='Verifying...';btn.disabled=true;
+  try{
+    const {data:factors,error:fErr}=await sbClient.auth.mfa.listFactors();
+    if(fErr) throw fErr;
+    const totp=(factors.totp||[]).find(f=>f.status==='verified');
+    if(!totp) throw new Error('No 2FA factor found');
+    const {data:chal,error:cErr}=await sbClient.auth.mfa.challenge({factorId:totp.id});
+    if(cErr) throw cErr;
+    const {error:vErr}=await sbClient.auth.mfa.verify({factorId:totp.id,challengeId:chal.id,code});
+    if(vErr) throw vErr;
+    // Now fully authenticated (aal2) — get fresh session
+    const {data:sess}=await sbClient.auth.getSession();
+    document.getElementById('login-step2').style.display='none';
+    document.getElementById('login-step1').style.display='block';
+    btn.textContent='→ Verify';btn.disabled=false;
+    await onAuthSuccess(sess.session);
+  }catch(e){
+    errEl.textContent=e.message||'Invalid code, try again';
+    errEl.style.display='block';
+    setTimeout(()=>errEl.style.display='none',3500);
+    btn.textContent='→ Verify';btn.disabled=false;
   }
 }
 
@@ -1290,6 +1353,12 @@ async function doIdleLogout(){
   try{
     const {data}=await sbClient.auth.getSession();
     if(data&&data.session){
+      // If MFA is required but session is only aal1, prompt for code
+      const {data:aal}=await sbClient.auth.mfa.getAuthenticatorAssuranceLevel();
+      if(aal && aal.nextLevel==='aal2' && aal.nextLevel!==aal.currentLevel){
+        showMfaLoginStep();
+        return;
+      }
       await onAuthSuccess(data.session);
     }
   }catch(e){console.error('Session restore error:',e);}
@@ -2737,6 +2806,7 @@ function renderAdmins(){
       <td><div class="td-actions">
         ${isMe?'<span style="font-size:11px;color:var(--muted)">—</span>':`
           <button class="act-btn act-edit" data-tip="Reset password" data-tip-pos="left" onclick="openResetPwd('${a.id}')">🔑</button>
+          <button class="act-btn act-edit" data-tip="Reset 2FA (lost device)" data-tip-pos="left" onclick="resetMemberMfa('${a.id}','${esc(a.full_name||a.email)}')">🔓</button>
           ${a.active
             ? `<button class="act-btn act-reject" data-tip="Deactivate" data-tip-pos="left" onclick="toggleAdminActive('${a.id}',false)">⏸</button>`
             : `<button class="act-btn act-approve" data-tip="Reactivate" data-tip-pos="left" onclick="toggleAdminActive('${a.id}',true)">▶</button>`}
@@ -2800,6 +2870,20 @@ async function saveAdmin(){
     showMsg('admin-msg',e.message,'error');
     btn.textContent='Create Member';btn.disabled=false;
   }
+}
+
+function resetMemberMfa(id,name){
+  showConfirm({
+    type:'warn',icon:'🔓',title:'Reset Two-Factor',
+    text:`Remove 2FA from <b>${esc(name)}</b>? Use this if they lost their phone. They'll log in with just their password and can re-enable 2FA afterward.`,
+    okLabel:'Reset 2FA',
+    onConfirm:async()=>{
+      try{
+        const r=await adminAPI({action:'reset_mfa',id});
+        alert(`2FA removed for ${name}. They can now log in with their password.`);
+      }catch(e){alert(e.message);}
+    }
+  });
 }
 
 function openResetPwd(id){
@@ -2909,7 +2993,7 @@ async function startMfaEnroll(){
     mfaEnrollData={factorId:data.id,qr:data.totp.qr_code,secret:data.totp.secret};
     view.innerHTML=`
       <div class="mfa-step">1. Scan this QR code with your authenticator app:</div>
-      <img class="mfa-qr" src="${data.totp.qr_code}" alt="QR code"/>
+      <div class="mfa-qr" id="mfa-qr-box"></div>
       <div class="mfa-step">Or enter this key manually:</div>
       <div class="mfa-secret">${esc(data.totp.secret)}</div>
       <div class="mfa-step">2. Enter the 6-digit code from your app:</div>
@@ -2919,6 +3003,16 @@ async function startMfaEnroll(){
         <button class="btn-secondary" onclick="renderMfaStatus()">Cancel</button>
         <button class="btn-primary" id="mfa-verify-btn" onclick="verifyMfaEnroll()">Verify &amp; Enable</button>
       </div>`;
+    // Render QR safely — Supabase returns either an <svg> string or a data: URI
+    const box=document.getElementById('mfa-qr-box');
+    const qr=data.totp.qr_code||'';
+    if(qr.trim().startsWith('<svg')){
+      box.innerHTML=qr; // inline SVG markup
+    } else {
+      const img=document.createElement('img');
+      img.src=qr; img.alt='QR code'; img.style.width='100%'; img.style.height='100%';
+      box.appendChild(img);
+    }
     setTimeout(()=>document.getElementById('mfa-verify-code')?.focus(),100);
   }catch(e){
     view.innerHTML=`<div class="mfa-msg error" style="display:block">${esc(e.message||'Enrollment failed')}</div>

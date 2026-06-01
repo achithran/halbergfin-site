@@ -124,6 +124,20 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    // ── RESET MFA (owner rescues a locked-out user) ───
+    if (action === 'reset_mfa') {
+      const { id } = req.body;
+      if (!id) return res.status(400).json({ error: 'id required' });
+      // List the user's factors and delete them all
+      const { data: factorData, error: listErr } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: id });
+      if (listErr) return res.status(400).json({ error: listErr.message });
+      const factors = (factorData && (factorData.factors || factorData)) || [];
+      for (const f of factors) {
+        try { await supabaseAdmin.auth.admin.mfa.deleteFactor({ userId: id, id: f.id }); } catch (e) { console.error('deleteFactor', e); }
+      }
+      return res.status(200).json({ success: true, removed: factors.length });
+    }
+
     return res.status(400).json({ error: 'Unknown action' });
   } catch (e) {
     console.error('create-admin error:', e);
