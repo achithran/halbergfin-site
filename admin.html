@@ -503,7 +503,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
         <div class="notif-panel" id="notif-panel" style="display:none">
           <div class="notif-head">
             <span>Notifications</span>
-            <button class="notif-mark-all" onclick="markAllNotifsRead()">Mark all read</button>
+            <button class="notif-mark-all" onclick="clearAllNotifs()">Clear all</button>
           </div>
           <div class="notif-list" id="notif-list">
             <div class="notif-empty">No notifications</div>
@@ -2042,13 +2042,10 @@ document.addEventListener('click',(e)=>{
 });
 
 async function openNotif(id,leadId){
-  // Mark read
-  const n=myNotifs.find(x=>x.id===id);
-  if(n&&!n.read){
-    n.read=true;
-    renderNotifs();
-    try{await sb(`/rest/v1/notifications?id=eq.${id}`,'PATCH',{read:true});}catch(e){console.error(e);}
-  }
+  // Remove this notification (click = dismiss)
+  myNotifs=myNotifs.filter(x=>x.id!==id);
+  renderNotifs();
+  try{await sb(`/rest/v1/notifications?id=eq.${id}`,'DELETE');}catch(e){console.error(e);}
   // Jump to the lead
   if(leadId){
     document.getElementById('notif-panel').style.display='none';
@@ -2061,14 +2058,13 @@ async function openNotif(id,leadId){
   }
 }
 
-async function markAllNotifsRead(){
-  const unread=myNotifs.filter(n=>!n.read);
-  if(!unread.length) return;
-  unread.forEach(n=>n.read=true);
+async function clearAllNotifs(){
+  if(!myNotifs.length) return;
+  myNotifs=[];
   renderNotifs();
   try{
-    await sb(`/rest/v1/notifications?admin_id=eq.${currentAdmin.id}&read=eq.false`,'PATCH',{read:true});
-  }catch(e){console.error('markAll error:',e);}
+    await sb(`/rest/v1/notifications?admin_id=eq.${currentAdmin.id}`,'DELETE');
+  }catch(e){console.error('clearAll error:',e);}
 }
 
 function startNotifPolling(){
