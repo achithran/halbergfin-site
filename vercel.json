@@ -8,5 +8,6 @@
       "path": "/api/cron-stale-digest",
       "schedule": "30 3 * * *"
     }
-  ]
+  ],
+  "cleanUrls": true
 }
