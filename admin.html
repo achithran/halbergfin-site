@@ -422,9 +422,11 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .wl-head-noresp{color:#c084fc}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;background:var(--ink2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
-.tb-unassigned{background:rgba(231,76,60,.14);color:#ff8577;border:1px solid rgba(231,76,60,.35);border-radius:9px;padding:8px 14px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;animation:pulseUnassigned 2.5s ease-in-out infinite}
-.tb-unassigned:hover{background:rgba(231,76,60,.24)}
-@keyframes pulseUnassigned{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.0)}50%{box-shadow:0 0 0 4px rgba(231,76,60,.12)}}
+.tb-unassigned{display:inline-flex;align-items:center;gap:8px;background:rgba(212,168,67,.1);color:var(--gold2);border:1px solid rgba(212,168,67,.3);border-radius:10px;padding:8px 14px;margin-right:4px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tb-unassigned:hover{background:rgba(212,168,67,.18);border-color:rgba(212,168,67,.5)}
+.tb-unassigned .ua-ico{font-size:13px;opacity:.9}
+.tb-unassigned .ua-num{background:var(--gold);color:var(--ink);font-weight:800;font-size:11px;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+.tb-unassigned .ua-label{color:var(--gold2);opacity:.85;letter-spacing:.2px}
 .vt-btn{padding:9px 16px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;transition:all .2s}
 .vt-btn.active{background:var(--gold);color:var(--ink)}
 .vt-btn:not(.active):hover{color:var(--text)}
@@ -526,7 +528,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <span id="current-admin-label" style="font-size:11px;color:var(--gold2);font-weight:600"></span>
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
       <button class="tb-unassigned" id="tb-unassigned" onclick="goToUnassigned()" data-tip="Leads waiting to be assigned" style="display:none">
-        ⚠ <span id="tb-unassigned-num">0</span> unassigned
+        <span class="ua-ico">📥</span><span class="ua-num" id="tb-unassigned-num">0</span><span class="ua-label">to assign</span>
       </button>
       <div class="notif-center">
         <button class="tb-btn notif-bell" id="notif-bell" onclick="toggleNotifPanel(event)" data-tip="Notifications">
