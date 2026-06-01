@@ -77,6 +77,23 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .notif-sub{font-size:11px;color:var(--muted)}
 .notif-time{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px}
 .notif-empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:12px}
+.notif-foot{border-top:1px solid rgba(255,255,255,.07);padding:10px;text-align:center}
+.notif-foot button{background:none;border:none;color:var(--gold2);font-size:12px;font-weight:600;cursor:pointer;font-family:'Satoshi',sans-serif}
+.notif-foot button:hover{text-decoration:underline}
+/* NOTIF FILTER BAR */
+.notif-filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.nf-btn{padding:7px 14px;border-radius:8px;background:var(--ink2);border:1px solid var(--border);color:var(--muted);font-family:'Satoshi',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.nf-btn.active{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.nf-btn:not(.active):hover{color:var(--text)}
+/* ARCHIVE ITEM */
+.arch-item{display:flex;align-items:center;gap:14px;background:var(--ink2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;transition:all .15s}
+.arch-item.unread{border-color:rgba(212,168,67,.3);background:rgba(212,168,67,.05)}
+.arch-item .arch-body{flex:1;min-width:0;cursor:pointer}
+.arch-title{font-size:14px;font-weight:600;color:white;margin-bottom:3px}
+.arch-sub{font-size:12px;color:var(--muted)}
+.arch-time{font-size:11px;color:rgba(255,255,255,.35);white-space:nowrap}
+.arch-del{background:rgba(231,76,60,.1);color:#ff6b5a;border:1px solid rgba(231,76,60,.25);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13px}
+.arch-del:hover{background:rgba(231,76,60,.2)}
 /* DAYS-SINCE BADGE */
 .days-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.3px;margin-left:8px}
 .days-fresh{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
@@ -508,6 +525,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
           <div class="notif-list" id="notif-list">
             <div class="notif-empty">No notifications</div>
           </div>
+          <div class="notif-foot"><button onclick="openNotifArchive()">See all notifications →</button></div>
         </div>
       </div>
       <button class="tb-btn tb-bell" id="bell-btn" onclick="toggleNotifications()" data-tip="Sound alerts for new leads">🔔 Off</button>
@@ -538,6 +556,30 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     </div>
     <div class="tab" id="tab-btn-admins" onclick="switchTab('admins')" data-tip-pos="bottom" data-tip="Manage team members" style="display:none">
       👥 Team
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       NOTIFICATIONS ARCHIVE
+  ═══════════════════════════════════════ -->
+  <div id="tab-notifications" class="main" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+      <div>
+        <div class="page-title">Notifications</div>
+        <div class="page-sub">Everything that needs your attention</div>
+      </div>
+      <button class="tb-btn tb-refresh" onclick="clearAllNotifs()" data-tip="Delete all notifications">🗑 Clear All</button>
+    </div>
+    <div class="notif-filter-bar" id="notif-filter-bar">
+      <button class="nf-btn active" data-nf="all" onclick="setNotifFilter('all')">All</button>
+      <button class="nf-btn" data-nf="new_lead" onclick="setNotifFilter('new_lead')">🎯 Leads</button>
+      <button class="nf-btn" data-nf="assignment" onclick="setNotifFilter('assignment')">📥 Assignments</button>
+      <button class="nf-btn" data-nf="conversion" onclick="setNotifFilter('conversion')">🎉 Conversions</button>
+      <button class="nf-btn" data-nf="team" onclick="setNotifFilter('team')">👥 Team</button>
+      <button class="nf-btn" data-nf="system" onclick="setNotifFilter('system')">⚙️ System</button>
+    </div>
+    <div id="notif-archive-list" style="margin-top:16px">
+      <div class="notif-empty">Loading...</div>
     </div>
   </div>
 
@@ -1161,13 +1203,14 @@ async function logout(){
 
 // ── TABS ──────────────────────────────────────────
 function switchTab(tab){
-  ['today','enquiries','leads','enrolled','rejected','followups','admins'].forEach(t=>{
+  ['today','enquiries','leads','enrolled','rejected','followups','admins','notifications'].forEach(t=>{
     const el=document.getElementById('tab-'+t);
     const btn=document.getElementById('tab-btn-'+t);
     if(el) el.style.display=t===tab?'block':'none';
     if(btn) btn.classList.toggle('active',t===tab);
   });
   if(tab==='today') renderWorklist();
+  if(tab==='notifications'){loadNotifs().then(renderArchive);}
   if(tab==='followups') loadAllFU();
   if(tab==='leads') renderLeads();
   if(tab==='enrolled') renderEnrolled();
@@ -1389,6 +1432,12 @@ async function doConvert(id){
     if(lead){lead.status='active';if(patch.assigned_to){lead.assigned_to=patch.assigned_to;lead.assigned_at=patch.assigned_at;}}
     if(patch.assigned_to){
       try{await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Auto-assigned to ${adminName(patch.assigned_to)}`,logged_by:currentAdmin?currentAdmin.id:null});}catch(e){}
+      // Notify the agent they got a new lead (if it's not themselves)
+      const ln=allLeads.find(l=>l.id===id);
+      if(patch.assigned_to!==(currentAdmin&&currentAdmin.id)){
+        const nm=ln?`${ln.first_name||''} ${ln.last_name||''}`.trim():'A lead';
+        notifyAdmins([patch.assigned_to],{type:'assignment',title:'📥 New lead assigned to you',body:`${nm} · ${ln?(ln.course_interest||'No course'):''}`,lead_id:id});
+      }
     }
     updateStats(); renderEnquiries(); renderLeads(); renderEnrolled(); renderRejected();
   }catch(e){alert('Error: '+e.message)}
@@ -1482,6 +1531,11 @@ async function assignLead(id,adminId){
     if(newAssignee){
       const who=adminName(newAssignee);
       await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Assigned to ${who}`,logged_by:currentAdmin?currentAdmin.id:null});
+      // Notify the assignee (unless they assigned it to themselves)
+      if(newAssignee!==(currentAdmin&&currentAdmin.id)){
+        const nm=`${lead.first_name||''} ${lead.last_name||''}`.trim();
+        notifyAdmins([newAssignee],{type:'assignment',title:'📥 A lead was assigned to you',body:`${nm} · ${lead.course_interest||'No course'}`,lead_id:id});
+      }
     }
     if(leadsViewMode==='mine') renderLeads();
   }catch(e){alert('Error: '+e.message);loadData();}
@@ -1635,6 +1689,12 @@ async function doSetStatus(id,status){
     await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status});
     const lead=allLeads.find(l=>l.id===id);
     if(lead) lead.status=status;
+    // Celebrate enrollment — notify owners
+    if(status==='enrolled'&&lead){
+      const nm=`${lead.first_name||''} ${lead.last_name||''}`.trim();
+      const by=currentAdmin?(currentAdmin.full_name||currentAdmin.email):'Someone';
+      notifyAdmins(ownerIds(),{type:'conversion',title:`🎉 Lead enrolled: ${nm}`,body:`${lead.course_interest||'A course'} · closed by ${by}`,lead_id:id});
+    }
     updateStats();renderEnquiries();renderLeads();renderEnrolled();renderRejected();
   }catch(e){alert('Error: '+e.message)}
 }
@@ -1985,6 +2045,18 @@ function daysSinceBadge(createdAt){
 let myNotifs=[];
 let notifPollTimer=null;
 
+// Create notifications for one or more admins. targets = array of admin ids.
+async function notifyAdmins(targets,{type,title,body,lead_id}){
+  const rows=(targets||[]).filter(Boolean).map(aid=>({
+    admin_id:aid, type:type||'system', title, body:body||null, lead_id:lead_id||null
+  }));
+  if(!rows.length) return;
+  try{ await sb('/rest/v1/notifications','POST',rows); }
+  catch(e){ console.error('notifyAdmins error:',e); }
+}
+// Convenience: notify all active owners
+function ownerIds(){ return (allAdmins||[]).filter(a=>a.active&&a.role==='owner').map(a=>a.id); }
+
 async function loadNotifs(){
   if(!currentAdmin) return;
   try{
@@ -2062,10 +2134,44 @@ async function clearAllNotifs(){
   if(!myNotifs.length) return;
   myNotifs=[];
   renderNotifs();
+  renderArchive();
   try{
     await sb(`/rest/v1/notifications?admin_id=eq.${currentAdmin.id}`,'DELETE');
   }catch(e){console.error('clearAll error:',e);}
 }
+
+// ── NOTIFICATIONS ARCHIVE ─────────────────────────
+let notifFilter='all';
+function openNotifArchive(){
+  document.getElementById('notif-panel').style.display='none';
+  switchTab('notifications');
+}
+function setNotifFilter(f){
+  notifFilter=f;
+  document.querySelectorAll('.nf-btn').forEach(b=>b.classList.toggle('active',b.dataset.nf===f));
+  renderArchive();
+}
+function renderArchive(){
+  const list=document.getElementById('notif-archive-list');
+  if(!list) return;
+  const items=notifFilter==='all'?myNotifs:myNotifs.filter(n=>(n.type||'system')===notifFilter);
+  if(!items.length){list.innerHTML='<div class="notif-empty">No notifications in this category</div>';return;}
+  list.innerHTML=items.map(n=>`
+    <div class="arch-item ${n.read?'':'unread'}">
+      <div class="arch-body" onclick="openNotif('${n.id}','${n.lead_id||''}')">
+        <div class="arch-title">${esc(n.title)}</div>
+        ${n.body?`<div class="arch-sub">${esc(n.body)}</div>`:''}
+      </div>
+      <div class="arch-time">${notifTime(n.created_at)}</div>
+      <button class="arch-del" onclick="deleteNotif('${n.id}')" data-tip="Delete">🗑</button>
+    </div>`).join('');
+}
+async function deleteNotif(id){
+  myNotifs=myNotifs.filter(n=>n.id!==id);
+  renderNotifs();renderArchive();
+  try{await sb(`/rest/v1/notifications?id=eq.${id}`,'DELETE');}catch(e){console.error(e);}
+}
+
 
 function startNotifPolling(){
   stopNotifPolling();
@@ -2582,6 +2688,9 @@ async function saveAdmin(){
     showMsg('admin-msg',`✓ ${name} added! They can log in with their email and password.`,'success');
     btn.textContent='Create Member';btn.disabled=false;
     await loadAdmins();
+    // Notify owners (other than the creator) about the new member
+    const others=ownerIds().filter(oid=>oid!==(currentAdmin&&currentAdmin.id));
+    notifyAdmins(others,{type:'team',title:'👥 New team member added',body:`${name} joined as ${role}`});
     setTimeout(()=>closeModal('modal-admin'),1400);
   }catch(e){
     showMsg('admin-msg',e.message,'error');
