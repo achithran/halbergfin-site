@@ -422,6 +422,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 .wl-head-noresp{color:#c084fc}
 /* VIEW TOGGLE */
 .view-toggle{display:flex;background:var(--ink2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.tb-unassigned{background:rgba(231,76,60,.14);color:#ff8577;border:1px solid rgba(231,76,60,.35);border-radius:9px;padding:8px 14px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;animation:pulseUnassigned 2.5s ease-in-out infinite}
+.tb-unassigned:hover{background:rgba(231,76,60,.24)}
+@keyframes pulseUnassigned{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,.0)}50%{box-shadow:0 0 0 4px rgba(231,76,60,.12)}}
 .vt-btn{padding:9px 16px;font-family:'Satoshi',sans-serif;font-size:12px;font-weight:700;color:var(--muted);background:none;border:none;cursor:pointer;transition:all .2s}
 .vt-btn.active{background:var(--gold);color:var(--ink)}
 .vt-btn:not(.active):hover{color:var(--text)}
@@ -522,6 +525,9 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
     <div class="tb-right">
       <span id="current-admin-label" style="font-size:11px;color:var(--gold2);font-weight:600"></span>
       <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
+      <button class="tb-unassigned" id="tb-unassigned" onclick="goToUnassigned()" data-tip="Leads waiting to be assigned" style="display:none">
+        ⚠ <span id="tb-unassigned-num">0</span> unassigned
+      </button>
       <div class="notif-center">
         <button class="tb-btn notif-bell" id="notif-bell" onclick="toggleNotifPanel(event)" data-tip="Notifications">
           🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span>
@@ -719,6 +725,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <div class="view-toggle">
         <button class="vt-btn active" id="vt-all" onclick="setLeadsView('all')">All Leads</button>
         <button class="vt-btn" id="vt-mine" onclick="setLeadsView('mine')">My Leads</button>
+        <button class="vt-btn" id="vt-unassigned" onclick="setLeadsView('unassigned')">Unassigned</button>
       </div>
       <div class="search-wrap">
         <span class="search-ico">🔍</span>
@@ -1310,6 +1317,7 @@ function assignSelectHTML(lead){
 
 // ── STATS + FUNNEL ────────────────────────────────
 function updateStats(){
+  updateUnassignedBadge();
   const n=new Date();
   const pending=allLeads.filter(l=>l.status==='pending'||!l.status);
   const active=allLeads.filter(l=>l.status==='active');
@@ -1460,12 +1468,15 @@ async function doConvert(id){
 
 // ── RENDER LEADS TABLE ────────────────────────────
 function renderLeads(){
+  updateUnassignedBadge();
   const q=(document.getElementById('leads-search').value||'').toLowerCase();
   const c=document.getElementById('leads-filter-course').value;
   const leads=allLeads.filter(l=>{
     if(l.status!=='active') return false;
     // My Leads view — only leads assigned to current admin
     if(leadsViewMode==='mine'&&currentAdmin&&l.assigned_to!==currentAdmin.id) return false;
+    // Unassigned view — only leads with no assignee
+    if(leadsViewMode==='unassigned'&&l.assigned_to) return false;
     const mq=!q||[l.first_name,l.last_name,l.email,l.whatsapp,l.course_interest,l.experience,l.message,l.next_action].some(v=>v&&v.toLowerCase().includes(q));
     return mq&&(!c||l.course_interest===c);
   });
@@ -1483,8 +1494,29 @@ function setLeadsView(mode){
   leadsViewMode=mode;
   document.getElementById('vt-all').classList.toggle('active',mode==='all');
   document.getElementById('vt-mine').classList.toggle('active',mode==='mine');
+  const u=document.getElementById('vt-unassigned');
+  if(u) u.classList.toggle('active',mode==='unassigned');
   leadsPage=1;
   renderLeads();
+}
+
+// Jump to Leads tab filtered to unassigned
+function goToUnassigned(){
+  switchTab('leads');
+  setLeadsView('unassigned');
+}
+
+// Persistent topbar badge — reflects unassigned active leads live
+function updateUnassignedBadge(){
+  const btn=document.getElementById('tb-unassigned');
+  if(!btn) return;
+  const count=allLeads.filter(l=>l.status==='active'&&!l.assigned_to).length;
+  if(count>0){
+    document.getElementById('tb-unassigned-num').textContent=count;
+    btn.style.display='inline-flex';
+  } else {
+    btn.style.display='none';
+  }
 }
 
 function renderLeadRow(l,num){
