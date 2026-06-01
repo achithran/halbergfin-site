@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   try {
     const { data: leads, error } = await supabase
       .from('enquiries')
-      .select('first_name,last_name,whatsapp,course_interest,last_contacted,contact_attempts,created_at,status')
+      .select('id,first_name,last_name,whatsapp,course_interest,last_contacted,contact_attempts,created_at,status,assigned_to')
       .eq('status', 'active');
     if (error) throw error;
 
@@ -84,14 +84,68 @@ export default async function handler(req, res) {
         <div style="margin-top:28px"><a href="https://halbergfin.org/adm.html" style="background:#d4a843;color:#0a0e17;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Open Dashboard →</a></div>
       </div>`;
 
-    await resend.emails.send({
-      from: 'Halberg Fin <onboarding@resend.dev>',
-      to: process.env.NOTIFY_EMAIL,
-      subject: `😴 ${stale.length + neverContacted.length} leads need a nudge — Halberg Fin`,
-      html
-    });
+    // Email (may fail if domain unverified — don't block notifications)
+    try {
+      await resend.emails.send({
+        from: 'Halberg Fin <onboarding@resend.dev>',
+        to: process.env.NOTIFY_EMAIL,
+        subject: `😴 ${stale.length + neverContacted.length} leads need a nudge — Halberg Fin`,
+        html
+      });
+    } catch (mailErr) {
+      console.error('Digest email failed (continuing to in-app notifs):', mailErr.message);
+    }
 
-    return res.status(200).json({ success: true, stale: stale.length, neverContacted: neverContacted.length });
+    // ── IN-APP NOTIFICATIONS ──────────────────────────
+    // For each stale/never-contacted lead, notify the assigned agent;
+    // if unassigned, notify all active admins (the pool).
+    // Dedupe: skip if an unread stale notification for that lead already exists.
+    let notifCreated = 0;
+    try {
+      const { data: admins } = await supabase.from('admins').select('id,role,active').eq('active', true);
+      const activeAdmins = admins || [];
+      const allTargetsLeads = [...stale, ...neverContacted];
+
+      // Existing unread stale notifications, to avoid duplicates day after day
+      const { data: existing } = await supabase
+        .from('notifications')
+        .select('lead_id,admin_id')
+        .eq('type', 'stale')
+        .eq('read', false);
+      const existingKey = new Set((existing || []).map(n => `${n.lead_id}|${n.admin_id}`));
+
+      const rows = [];
+      for (const lead of allTargetsLeads) {
+        const targets = lead.assigned_to
+          ? [lead.assigned_to]
+          : activeAdmins.map(a => a.id); // unassigned → whole pool
+        const nm = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'A lead';
+        const days = lead.last_contacted
+          ? Math.floor((now - new Date(lead.last_contacted).getTime()) / 86400000)
+          : Math.floor((now - new Date(lead.created_at).getTime()) / 86400000);
+        const body = lead.last_contacted
+          ? `No contact in ${days} days · ${lead.course_interest || 'No course'}`
+          : `Never contacted · ${days}d old · ${lead.course_interest || 'No course'}`;
+        for (const adminId of targets) {
+          if (existingKey.has(`${lead.id}|${adminId}`)) continue; // already notified, still unread
+          rows.push({
+            admin_id: adminId,
+            type: 'stale',
+            title: `😴 Lead needs follow-up: ${nm}`,
+            body,
+            lead_id: lead.id
+          });
+        }
+      }
+      if (rows.length) {
+        await supabase.from('notifications').insert(rows);
+        notifCreated = rows.length;
+      }
+    } catch (notifErr) {
+      console.error('In-app notification creation failed:', notifErr.message);
+    }
+
+    return res.status(200).json({ success: true, stale: stale.length, neverContacted: neverContacted.length, notifCreated });
   } catch (e) {
     console.error('Digest error:', e);
     return res.status(500).json({ error: e.message });

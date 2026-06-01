@@ -94,6 +94,10 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .arch-time{font-size:11px;color:rgba(255,255,255,.35);white-space:nowrap}
 .arch-del{background:rgba(231,76,60,.1);color:#ff6b5a;border:1px solid rgba(231,76,60,.25);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13px}
 .arch-del:hover{background:rgba(231,76,60,.2)}
+/* SYSTEM BANNER */
+.sys-banner{display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(231,76,60,.12);border-bottom:1px solid rgba(231,76,60,.3);color:#ffb4aa;font-size:13px;padding:10px 20px;text-align:center}
+.sys-banner-x{background:none;border:none;color:#ffb4aa;cursor:pointer;font-size:14px;opacity:.7}
+.sys-banner-x:hover{opacity:1}
 /* DAYS-SINCE BADGE */
 .days-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.3px;margin-left:8px}
 .days-fresh{background:rgba(46,204,113,.1);color:var(--green);border:1px solid rgba(46,204,113,.25)}
@@ -505,6 +509,11 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
 <!-- APP -->
 <div id="app">
 
+  <div class="sys-banner" id="sys-banner" style="display:none">
+    <span id="sys-banner-text"></span>
+    <button class="sys-banner-x" onclick="dismissSysBanner()">✕</button>
+  </div>
+
   <div class="topbar">
     <div style="display:flex;align-items:center">
       <span class="tb-logo">HALBERG FIN</span>
@@ -575,6 +584,7 @@ input[type=date].fu-input::-webkit-calendar-picker-indicator{filter:invert(.4)}
       <button class="nf-btn" data-nf="new_lead" onclick="setNotifFilter('new_lead')">🎯 Leads</button>
       <button class="nf-btn" data-nf="assignment" onclick="setNotifFilter('assignment')">📥 Assignments</button>
       <button class="nf-btn" data-nf="conversion" onclick="setNotifFilter('conversion')">🎉 Conversions</button>
+      <button class="nf-btn" data-nf="stale" onclick="setNotifFilter('stale')">😴 Stale</button>
       <button class="nf-btn" data-nf="team" onclick="setNotifFilter('team')">👥 Team</button>
       <button class="nf-btn" data-nf="system" onclick="setNotifFilter('system')">⚙️ System</button>
     </div>
@@ -1183,6 +1193,26 @@ function showCurrentAdmin(){
   // Owners see the Team tab
   const teamTab=document.getElementById('tab-btn-admins');
   if(teamTab) teamTab.style.display=currentAdmin.role==='owner'?'block':'none';
+  // System health banner — owners only, until email domain is verified
+  maybeShowSysBanner();
+}
+
+// Set this to true once you verify your Resend domain (or remove the banner)
+const EMAIL_DOMAIN_VERIFIED=false;
+function maybeShowSysBanner(){
+  const banner=document.getElementById('sys-banner');
+  if(!banner) return;
+  const dismissed=sessionStorage.getItem('hf_sysbanner_dismissed')==='1';
+  if(currentAdmin&&currentAdmin.role==='owner'&&!EMAIL_DOMAIN_VERIFIED&&!dismissed){
+    document.getElementById('sys-banner-text').innerHTML='⚠️ Email notifications are inactive — verify your domain in Resend to enable lead emails &amp; the daily digest. In-app notifications work normally.';
+    banner.style.display='flex';
+  } else {
+    banner.style.display='none';
+  }
+}
+function dismissSysBanner(){
+  sessionStorage.setItem('hf_sysbanner_dismissed','1');
+  document.getElementById('sys-banner').style.display='none';
 }
 
 async function logout(){
