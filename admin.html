@@ -1445,30 +1445,15 @@ function convertToLead(id){
 }
 async function doConvert(id){
   try{
-    // Round-robin auto-assign among active agents (if any exist)
-    let patch={status:'active'};
-    const agents=(allAdmins||[]).filter(a=>a.active&&a.role==='agent');
-    if(agents.length){
-      // Count current active leads per agent, pick the one with fewest
-      const counts={};
-      agents.forEach(a=>counts[a.id]=0);
-      allLeads.forEach(l=>{if(l.status==='active'&&counts[l.assigned_to]!==undefined)counts[l.assigned_to]++;});
-      const target=agents.reduce((min,a)=>counts[a.id]<counts[min.id]?a:min,agents[0]);
-      patch.assigned_to=target.id;
-      patch.assigned_at=new Date().toISOString();
-    }
-    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',patch);
+    // Convert to active lead — leave UNASSIGNED (goes to the pool).
+    // Owner assigns manually or via bulk-distribute; agents can claim.
+    await sb(`/rest/v1/enquiries?id=eq.${id}`,'PATCH',{status:'active',assigned_to:null,assigned_at:null});
     const lead=allLeads.find(l=>l.id===id);
-    if(lead){lead.status='active';if(patch.assigned_to){lead.assigned_to=patch.assigned_to;lead.assigned_at=patch.assigned_at;}}
-    if(patch.assigned_to){
-      try{await sb('/rest/v1/activity_logs','POST',{enquiry_id:id,note:`👤 Auto-assigned to ${adminName(patch.assigned_to)}`,logged_by:currentAdmin?currentAdmin.id:null});}catch(e){}
-      // Notify the agent they got a new lead (if it's not themselves)
-      const ln=allLeads.find(l=>l.id===id);
-      if(patch.assigned_to!==(currentAdmin&&currentAdmin.id)){
-        const nm=ln?`${ln.first_name||''} ${ln.last_name||''}`.trim():'A lead';
-        notifyAdmins([patch.assigned_to],{type:'assignment',title:'📥 New lead assigned to you',body:`${nm} · ${ln?(ln.course_interest||'No course'):''}`,lead_id:id});
-      }
-    }
+    if(lead){lead.status='active';lead.assigned_to=null;lead.assigned_at=null;}
+    // Notify owners that a lead is waiting to be assigned
+    const nm=lead?`${lead.first_name||''} ${lead.last_name||''}`.trim():'A lead';
+    const targets=ownerIds().filter(oid=>oid!==(currentAdmin&&currentAdmin.id));
+    notifyAdmins(targets,{type:'assignment',title:'🆕 Lead ready to assign',body:`${nm} · ${lead?(lead.course_interest||'No course'):''} — now in the unassigned pool`,lead_id:id});
     updateStats(); renderEnquiries(); renderLeads(); renderEnrolled(); renderRejected();
   }catch(e){alert('Error: '+e.message)}
 }
